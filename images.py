@@ -4,19 +4,35 @@ import matplotlib.pyplot as plt
 import skimage as sk
 
 
+def save_coords():
+    current_x = int(enter_x.get())
+    current_y = int(enter_y.get())
+    my_rect = canvas.create_rectangle(current_x, current_y, current_x+15, current_y+15,
+    outline="#fb0", fill="#fb0")
+
+
+def draw_box():
+    canvas.create_rectangle(1, 1, 50, 50, outline='red')
+
+
+
 def printcoords(event):
-        #outputting x and y coords to console
-        x, y = (event.x,event.y)
+    #outputting x and y coords to console
+    global enter_x, enter_y
 
-        labelx = tk.Label(root, text="xcord").grid(column=4, row=2)
-        enter_x = tk.Entry(root)
-        enter_x.insert(0, x)
-        enter_x.grid(column=4, row=3)
+    x, y = (event.x,event.y)
 
-        labely = tk.Label(root, text="ycord").grid(column=5, row=2)
-        enter_y = tk.Entry(root)
-        enter_y.insert(0, y)
-        enter_y.grid(column=5, row=3)
+    labelx = tk.Label(root, text="xcord").grid(column=4, row=2)
+    enter_x = tk.Entry(root)
+    enter_x.insert(0, x)
+    enter_x.grid(column=4, row=3)
+
+    labely = tk.Label(root, text="ycord").grid(column=5, row=2)
+    enter_y = tk.Entry(root)
+    enter_y.insert(0, y)
+    enter_y.grid(column=5, row=3)
+
+        
     #mouseclick event    
 
 def forward(image_number, canvas, direction):
@@ -68,7 +84,7 @@ canvas.grid(row=0, column=0, columnspan=3)
 png = tk.PhotoImage(file = r'test.png') # Just an example
 canvas.create_image(0, 0, image = png, anchor = "nw")
 
-canvas.create_rectangle(1, 1, 50, 50, outline='red')
+
 
 root.img = tk.PhotoImage(file="info.png")
 root.iconphoto( False, root.img )
@@ -77,8 +93,8 @@ root.title("Images")
 
 #convert sk image to pillow
 my_img1 = ImageTk.PhotoImage(Image.open("test.png"))
-my_img2 = ImageTk.PhotoImage(Image.open("images/171822-0001.tif"))
-my_img3 = ImageTk.PhotoImage(Image.open("images/171822-0002.tif"))
+my_img2 = ImageTk.PhotoImage(Image.open("bact.png"))
+my_img3 = ImageTk.PhotoImage(Image.open("bact.png"))
 my_img4 = ImageTk.PhotoImage(Image.open("test.png"))
 
 
@@ -97,8 +113,11 @@ button_back.grid(row=1, column=0)
 button_close.grid(row=1, column=1)
 button_forward.grid(row=1, column=2)
 
+button_first_coords = tk.Button(root, text="select_coords", command = save_coords)
+button_first_coords.grid(row = 3, column=0, columnspan=2)
 
-root.bind("<Button 1>",printcoords)
+
+root.bind("<space>",printcoords)
 
 root.mainloop()
 
