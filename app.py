@@ -1,7 +1,12 @@
+from fileinput import filename
 import tkinter as tk
 import csv
 from PIL import Image, ImageTk, ImageEnhance
 from click import command
+import os
+from tkinter import filedialog
+
+
 
 class App(tk.Frame):
     def __init__( self, parent):
@@ -10,12 +15,17 @@ class App(tk.Frame):
         self._createCanvas()
         self._create_buttons()
         self._createCanvasBinding()
+        self._open_image_folder()
 
-
+        self.loaded_image = []
         self.my_images = []
-        self.my_images.append(tk.PhotoImage(file="test.png"))
-        self.my_images.append(tk.PhotoImage(file="test.png"))
-        self.my_images.append(tk.PhotoImage(file="test.png"))
+
+        for root, dirs, files in os.walk(self.directory, topdown=False):
+            for name in files:
+                file_name = (os.path.join(root, name)).replace("\\","/")
+                self.loaded_image.append(file_name)
+        
+        self.my_images.append(tk.PhotoImage(file=self.loaded_image[0]))
         self.image_on_canvas = self.canvas.create_image(0, 0, anchor='nw', image=self.my_images[0])
 
     def _createVariables(self, parent):
@@ -26,6 +36,10 @@ class App(tk.Frame):
         self.recty1 = 0
         self.rectid = None
 
+    def _open_image_folder(self):
+        self.directory = filedialog.askdirectory()
+
+
     def _createCanvas(self):
         self.canvas = tk.Canvas(self.parent, width = 600, height = 600)
         self.canvas.grid(row=0, column=0, sticky='nsew')
@@ -34,6 +48,9 @@ class App(tk.Frame):
         #Button(root, text="1", padx=40, pady=20, command=lambda: enter_number(1))
         save_coords = tk.Button(self.parent, text="save_coords", padx=40, pady=20, command=self.save_coords)
         save_coords.grid(row=1, column=0)
+
+        current_dir = tk.Button(self.parent, text="open images", padx=40, pady=20, command=self._open_image_folder)
+        current_dir.grid(row=1, column=1)
 
     def _createCanvasBinding(self):
         self.canvas.bind( "<Button-1>", self.startRect )
@@ -83,3 +100,17 @@ if __name__ == "__main__":
     root.geometry( "800x800" )
     app = App(root)
     root.mainloop()
+
+
+
+# spare code
+
+
+# video_dir = "Volume_videos"
+
+# images = []
+
+# # for root, dirs, files in os.walk(video_dir, topdown=False):
+# #    for name in files:
+# #       file_name = (os.path.join(root, name))
+# #       images.append(file_name)
