@@ -68,11 +68,11 @@ canvas.grid(row=0, column=0, columnspan=3)
 png = tk.PhotoImage(file = r'test.png') # Just an example
 canvas.create_image(0, 0, image = png, anchor = "nw")
 
-canvas.create_rectangle(0, 0, 50, 50, fill='red')
+canvas.create_rectangle(1, 1, 50, 50, outline='red')
 
-# root.img = tk.PhotoImage(file="info.png")
-# root.iconphoto( False, root.img )
-# root.title("Images")
+root.img = tk.PhotoImage(file="info.png")
+root.iconphoto( False, root.img )
+root.title("Images")
 
 
 #convert sk image to pillow
