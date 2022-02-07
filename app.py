@@ -16,7 +16,10 @@ class App(tk.Frame):
         self._create_buttons()
         self._createCanvasBinding()
         self._open_image_folder()
+        self._initialize_image()
 
+
+    def _initialize_image(self):
         self.loaded_image = []
         self.my_images = []
 
@@ -24,9 +27,10 @@ class App(tk.Frame):
             for name in files:
                 file_name = (os.path.join(root, name)).replace("\\","/")
                 self.loaded_image.append(file_name)
-        
+
         self.my_images.append(tk.PhotoImage(file=self.loaded_image[0]))
         self.image_on_canvas = self.canvas.create_image(0, 0, anchor='nw', image=self.my_images[0])
+
 
     def _createVariables(self, parent):
         self.parent = parent
@@ -42,7 +46,7 @@ class App(tk.Frame):
 
     def _createCanvas(self):
         self.canvas = tk.Canvas(self.parent, width = 600, height = 600)
-        self.canvas.grid(row=0, column=0, sticky='nsew')
+        self.canvas.grid(row=0, column=0, sticky='nsew', columnspan=3)
 
     def _create_buttons(self):
         #Button(root, text="1", padx=40, pady=20, command=lambda: enter_number(1))
@@ -51,6 +55,9 @@ class App(tk.Frame):
 
         current_dir = tk.Button(self.parent, text="open images", padx=40, pady=20, command=self._open_image_folder)
         current_dir.grid(row=1, column=1)
+
+        delete_coords = tk.Button(self.parent, text="delete coords", padx=40, pady=20, command=self.delete_coords)
+        delete_coords.grid(row=1, column=2)
 
     def _createCanvasBinding(self):
         self.canvas.bind( "<Button-1>", self.startRect )
@@ -89,8 +96,11 @@ class App(tk.Frame):
     def save_coords(self):
         with open('new.csv', 'a', encoding='UTF8') as f:
             writer = csv.writer(f)
-            writer.writerow([self.rectid, self.rectx0, self.recty0,
+            writer.writerow([os.path.split(self.directory)[-1], self.rectid, self.rectx0, self.recty0,
                       self.rectx1, self.recty1])
+        self.canvas.delete(self.rectid)
+
+    def delete_coords(self):
         self.canvas.delete(self.rectid)
         
 
