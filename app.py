@@ -1,18 +1,22 @@
 import tkinter as tk
+import csv
 from PIL import Image, ImageTk, ImageEnhance
-
+from click import command
 
 class App(tk.Frame):
     def __init__( self, parent):
         tk.Frame.__init__(self, parent)
         self._createVariables(parent)
         self._createCanvas()
+        self._create_buttons()
+        self._createCanvasBinding()
+
+
         self.my_images = []
         self.my_images.append(tk.PhotoImage(file="test.png"))
         self.my_images.append(tk.PhotoImage(file="test.png"))
         self.my_images.append(tk.PhotoImage(file="test.png"))
         self.image_on_canvas = self.canvas.create_image(0, 0, anchor='nw', image=self.my_images[0])
-        self._createCanvasBinding()
 
     def _createVariables(self, parent):
         self.parent = parent
@@ -26,6 +30,10 @@ class App(tk.Frame):
         self.canvas = tk.Canvas(self.parent, width = 600, height = 600)
         self.canvas.grid(row=0, column=0, sticky='nsew')
 
+    def _create_buttons(self):
+        #Button(root, text="1", padx=40, pady=20, command=lambda: enter_number(1))
+        save_coords = tk.Button(self.parent, text="save_coords", padx=40, pady=20, command=self.save_coords)
+        save_coords.grid(row=1, column=0)
 
     def _createCanvasBinding(self):
         self.canvas.bind( "<Button-1>", self.startRect )
@@ -60,10 +68,18 @@ class App(tk.Frame):
         self.canvas.coords(self.rectid, self.rectx0, self.recty0,
                       self.rectx1, self.recty1)
         print('Rectangle ended')
+    
+    def save_coords(self):
+        with open('new.csv', 'a', encoding='UTF8') as f:
+            writer = csv.writer(f)
+            writer.writerow([self.rectid, self.rectx0, self.recty0,
+                      self.rectx1, self.recty1])
+        self.canvas.delete(self.rectid)
+        
 
 
 if __name__ == "__main__":
     root = tk.Tk()
-    root.geometry( "800x600" )
+    root.geometry( "800x800" )
     app = App(root)
     root.mainloop()
