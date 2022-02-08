@@ -3,6 +3,8 @@ import os
 import csv
 from tkinter import filedialog
 from analysis import Analysis
+import matplotlib.pyplot as plt
+from skimage import io
 
 class App(tk.Frame):
     def __init__(self, parent):
@@ -23,16 +25,21 @@ class App(tk.Frame):
         for root, dirs, files in os.walk(self.directory, topdown=False):
             self.root = root
             for name in files:
-                if "csv" not in name: 
+                if "tif" in name: 
                     file_name = (os.path.join(root, name)).replace("\\","/")
                     self.loaded_image.append(file_name)
 
-        self.my_images.append(tk.PhotoImage(file=self.loaded_image[0]))
+        sample_image = io.imread(self.loaded_image[0])
+        plt.imsave(os.path.normpath(self.root + "/display_image.png"), arr=sample_image, cmap="Greys")
+        
+
+        self.my_images.append(tk.PhotoImage(file=(os.path.normpath(self.root + "/display_image.png"))))
         self.image_on_canvas = self.canvas.create_image(0, 0, anchor='nw', image=self.my_images[0])
 
     def start_analysis(self):
         analysis = Analysis(self.root)
-        print(analysis.path)
+        analysis._load_images()
+        analysis.create_subcells()
 
     def _createVariables(self, parent):
         self.parent = parent
