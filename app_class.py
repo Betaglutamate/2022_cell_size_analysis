@@ -1,10 +1,11 @@
 import tkinter as tk
-import csv
 import os
+import csv
 from tkinter import filedialog
+from analysis import Analysis
 
 class App(tk.Frame):
-    def __init__( self, parent):
+    def __init__(self, parent):
         tk.Frame.__init__(self, parent)
         self._createVariables(parent)
         self._createCanvas()
@@ -12,6 +13,7 @@ class App(tk.Frame):
         self._createCanvasBinding()
         self._open_image_folder()
         self._initialize_image()
+        self.coords_shown = False
 
 
     def _initialize_image(self):
@@ -28,6 +30,9 @@ class App(tk.Frame):
         self.my_images.append(tk.PhotoImage(file=self.loaded_image[0]))
         self.image_on_canvas = self.canvas.create_image(0, 0, anchor='nw', image=self.my_images[0])
 
+    def start_analysis(self):
+        analysis = Analysis(self.root)
+        print(analysis.path)
 
     def _createVariables(self, parent):
         self.parent = parent
@@ -59,8 +64,11 @@ class App(tk.Frame):
         self.display_coords_button = tk.Button(self.parent, text="display coords", padx=40, pady=20, command=self.display_coords)
         self.display_coords_button.grid(row=1, column=3)
 
-        self.exit_button = tk.Button(self.parent, text="Exit", padx=40, pady=20, command=root.destroy)
+        self.exit_button = tk.Button(self.parent, text="Exit", padx=40, pady=20, command=self.master.destroy)
         self.exit_button.grid(row=1, column=4)
+
+        self.exit_button = tk.Button(self.parent, bg="#882244", text="Start_analysis", padx=40, pady=20, command=self.start_analysis)
+        self.exit_button.grid(row=0, column=6)
 
     def _createCanvasBinding(self):
         self.canvas.bind( "<Button-1>", self.startRect )
@@ -98,16 +106,15 @@ class App(tk.Frame):
         print('Rectangle ended')
     
     def save_coords(self):
-        with open(os.path.join(self.root, 'coordinates.csv'), 'a', encoding='UTF8') as f:
+        with open(os.path.join(self.root, 'coordinates.csv'), 'a', newline='', encoding='UTF8') as f:
             writer = csv.writer(f)
             writer.writerow([os.path.split(self.directory)[-1], self.rectid, self.rectx0, self.recty0,
                       self.rectx1, self.recty1])
         self.canvas.delete(self.rectid)
 
         if self.coords_shown:
-            if self.coords_shown:
-                self.hide_coords()
-                self.display_coords()
+            self.hide_coords()
+            self.display_coords()
 
     
     def display_coords(self):
@@ -135,19 +142,15 @@ class App(tk.Frame):
         self.display_coords_button['text'] = "display coords"
         self.display_coords_button['command'] = self.display_coords
 
-        # hide_coords = tk.Button(self.parent, text="display coords", padx=40, pady=20, command=self.display_coords)
-        # hide_coords.grid(row=1, column=3)
-
-
     def delete_coords(self):
 
         #remove the last row of csv file
 
-        with open(os.path.join(self.root, 'coordinates.csv'), 'r+', encoding='UTF8') as f:
+        with open(os.path.join(self.root, 'coordinates.csv'), 'r+', newline='', encoding='UTF8') as f:
             all_lines = f.read().splitlines()
             f.truncate(0) #Deletes all current data
 
-        with open(os.path.join(self.root, 'coordinates.csv'), 'a', encoding='UTF8') as f:
+        with open(os.path.join(self.root, 'coordinates.csv'), 'a', newline='', encoding='UTF8') as f:
             writer = csv.writer(f)
             for row in all_lines[:-1]: #I add the -1 so last line doesnt get copied
                 split_row = row.split(',')
@@ -161,24 +164,3 @@ class App(tk.Frame):
         self.display_coords()
         #add if to see if coords already displayed
         #self.display_coords()
-
-
-if __name__ == "__main__":
-    root = tk.Tk()
-    root.geometry( "800x800" )
-    app = App(root)
-    root.mainloop()
-
-
-
-# spare code
-
-
-# video_dir = "Volume_videos"
-
-# images = []
-
-# # for root, dirs, files in os.walk(video_dir, topdown=False):
-# #    for name in files:
-# #       file_name = (os.path.join(root, name))
-# #       images.append(file_name)
