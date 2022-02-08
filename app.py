@@ -103,15 +103,23 @@ class App(tk.Frame):
             writer.writerow([os.path.split(self.directory)[-1], self.rectid, self.rectx0, self.recty0,
                       self.rectx1, self.recty1])
         self.canvas.delete(self.rectid)
+
+        if self.coords_shown:
+            if self.coords_shown:
+                self.hide_coords()
+                self.display_coords()
+
     
     def display_coords(self):
+        self.coords_shown = True
+
         self.all_shown_rect = []
         
         with open(os.path.join(self.root, 'coordinates.csv'), 'r') as file:
             reader = csv.reader(file)
             for row in reader:
                 drawn_rect = self.canvas.create_rectangle(
-                    row[2], row[3], row[4], row[5], outline="#4eccde",  width=2)
+                    row[2], row[3], row[4], row[5], outline="#ff22de",  width=2)
                 self.all_shown_rect.append(drawn_rect)
         
         self.display_coords_button['text'] = "hide coords"
@@ -119,6 +127,8 @@ class App(tk.Frame):
 
     
     def hide_coords(self):
+        self.coords_shown = False
+
         for rect in self.all_shown_rect:
             self.canvas.delete(rect)
 
@@ -144,7 +154,13 @@ class App(tk.Frame):
                 writer.writerow(split_row)
 
         #call display coords.
+        if self.coords_shown:
+            self.hide_coords()
+
         
+        self.display_coords()
+        #add if to see if coords already displayed
+        #self.display_coords()
 
 
 if __name__ == "__main__":
