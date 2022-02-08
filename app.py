@@ -1,12 +1,7 @@
-from fileinput import filename
 import tkinter as tk
 import csv
-from PIL import Image, ImageTk, ImageEnhance
-from click import command
 import os
 from tkinter import filedialog
-
-
 
 class App(tk.Frame):
     def __init__( self, parent):
@@ -24,9 +19,11 @@ class App(tk.Frame):
         self.my_images = []
 
         for root, dirs, files in os.walk(self.directory, topdown=False):
+            self.root = root
             for name in files:
-                file_name = (os.path.join(root, name)).replace("\\","/")
-                self.loaded_image.append(file_name)
+                if "csv" not in name: 
+                    file_name = (os.path.join(root, name)).replace("\\","/")
+                    self.loaded_image.append(file_name)
 
         self.my_images.append(tk.PhotoImage(file=self.loaded_image[0]))
         self.image_on_canvas = self.canvas.create_image(0, 0, anchor='nw', image=self.my_images[0])
@@ -46,18 +43,24 @@ class App(tk.Frame):
 
     def _createCanvas(self):
         self.canvas = tk.Canvas(self.parent, width = 600, height = 600)
-        self.canvas.grid(row=0, column=0, sticky='nsew', columnspan=3)
+        self.canvas.grid(row=0, column=0, sticky='nsew', columnspan=5)
 
     def _create_buttons(self):
         #Button(root, text="1", padx=40, pady=20, command=lambda: enter_number(1))
-        save_coords = tk.Button(self.parent, text="save_coords", padx=40, pady=20, command=self.save_coords)
-        save_coords.grid(row=1, column=0)
+        self.save_coords_button = tk.Button(self.parent, text="save_coords", padx=40, pady=20, command=self.save_coords)
+        self.save_coords_button.grid(row=1, column=0)
 
-        current_dir = tk.Button(self.parent, text="open images", padx=40, pady=20, command=self._open_image_folder)
-        current_dir.grid(row=1, column=1)
+        self.current_dir_button = tk.Button(self.parent, text="open images", padx=40, pady=20, command=self._open_image_folder)
+        self.current_dir_button.grid(row=1, column=1)
 
-        delete_coords = tk.Button(self.parent, text="delete coords", padx=40, pady=20, command=self.delete_coords)
-        delete_coords.grid(row=1, column=2)
+        self.delete_coords_button = tk.Button(self.parent, text="delete coords", padx=40, pady=20, command=self.delete_coords)
+        self.delete_coords_button.grid(row=1, column=2)
+
+        self.display_coords_button = tk.Button(self.parent, text="display coords", padx=40, pady=20, command=self.display_coords)
+        self.display_coords_button.grid(row=1, column=3)
+
+        self.exit_button = tk.Button(self.parent, text="Exit", padx=40, pady=20, command=root.destroy)
+        self.exit_button.grid(row=1, column=4)
 
     def _createCanvasBinding(self):
         self.canvas.bind( "<Button-1>", self.startRect )
@@ -66,6 +69,7 @@ class App(tk.Frame):
 
     def startRect(self, event):
         #Translate mouse screen x0,y0 coordinates to canvas coordinates
+        self.canvas.delete(self.rectid)
         self.rectx0 = self.canvas.canvasx(event.x)
         self.recty0 = self.canvas.canvasy(event.y) 
         #Create rectangle
@@ -94,14 +98,52 @@ class App(tk.Frame):
         print('Rectangle ended')
     
     def save_coords(self):
-        with open('new.csv', 'a', encoding='UTF8') as f:
+        with open(os.path.join(self.root, 'coordinates.csv'), 'a', encoding='UTF8') as f:
             writer = csv.writer(f)
             writer.writerow([os.path.split(self.directory)[-1], self.rectid, self.rectx0, self.recty0,
                       self.rectx1, self.recty1])
         self.canvas.delete(self.rectid)
+    
+    def display_coords(self):
+        self.all_shown_rect = []
+        
+        with open(os.path.join(self.root, 'coordinates.csv'), 'r') as file:
+            reader = csv.reader(file)
+            for row in reader:
+                drawn_rect = self.canvas.create_rectangle(
+                    row[2], row[3], row[4], row[5], outline="#4eccde",  width=2)
+                self.all_shown_rect.append(drawn_rect)
+        
+        self.display_coords_button['text'] = "hide coords"
+        self.display_coords_button['command'] = self.hide_coords
+
+    
+    def hide_coords(self):
+        for rect in self.all_shown_rect:
+            self.canvas.delete(rect)
+
+        self.display_coords_button['text'] = "display coords"
+        self.display_coords_button['command'] = self.display_coords
+
+        # hide_coords = tk.Button(self.parent, text="display coords", padx=40, pady=20, command=self.display_coords)
+        # hide_coords.grid(row=1, column=3)
+
 
     def delete_coords(self):
-        self.canvas.delete(self.rectid)
+
+        #remove the last row of csv file
+
+        with open(os.path.join(self.root, 'coordinates.csv'), 'r+', encoding='UTF8') as f:
+            all_lines = f.read().splitlines()
+            f.truncate(0) #Deletes all current data
+
+        with open(os.path.join(self.root, 'coordinates.csv'), 'a', encoding='UTF8') as f:
+            writer = csv.writer(f)
+            for row in all_lines[:-1]: #I add the -1 so last line doesnt get copied
+                split_row = row.split(',')
+                writer.writerow(split_row)
+
+        #call display coords.
         
 
 
