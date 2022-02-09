@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import ndimage
 import seaborn as sns
-
+import pandas as pd
 
 
 class Analysis():
@@ -71,7 +71,7 @@ class Analysis():
         This function takes a cell subfolder and applies measure properties
         '''
         for path in self.cell_save_paths:
-            cell_collection = ski.io.imread_collection(os.path.normpath(path + '/*.png'))
+            cell_collection = ski.io.imread_collection(os.path.normpath(path + '/*.png'))[:-1]
 
             time_list = []
             area_list = []
@@ -83,8 +83,9 @@ class Analysis():
             
             fig, ax = plt.subplots()
             sns.scatterplot(ax=ax, x=time_list, y= area_list)
-            plt.savefig(os.path.join(path, "cellplot.png"))
-                
+            plt.savefig(os.path.join(path, "zz_cellplot.png"))
+            analysis_df = pd.DataFrame({"Time": time_list, "Area": area_list})
+            analysis_df.to_csv(os.path.join(path, "zz_cell_analysis.csv"))
         
 
 

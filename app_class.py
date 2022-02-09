@@ -16,7 +16,6 @@ class App(tk.Frame):
         self._open_image_folder()
         self._initialize_image()
         self.coords_shown = False
-        
 
 
     def _initialize_image(self):
@@ -53,7 +52,6 @@ class App(tk.Frame):
     def _open_image_folder(self):
         self.directory = filedialog.askdirectory()
         self._initialize_image()
-
 
     def _createCanvas(self):
         self.canvas = tk.Canvas(self.parent, width = 600, height = 600)
