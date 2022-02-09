@@ -51,6 +51,7 @@ class App(tk.Frame):
 
     def _open_image_folder(self):
         self.directory = filedialog.askdirectory()
+        self._initialize_image()
 
 
     def _createCanvas(self):
