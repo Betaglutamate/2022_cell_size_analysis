@@ -16,6 +16,7 @@ class App(tk.Frame):
         self._open_image_folder()
         self._initialize_image()
         self.coords_shown = False
+        
 
 
     def _initialize_image(self):

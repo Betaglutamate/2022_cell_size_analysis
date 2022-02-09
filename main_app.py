@@ -5,8 +5,11 @@ if __name__ == "__main__":
     root = tk.Tk()
     root.geometry( "1000x800" )
     app = App(root)
+    root.title("Cell Analyser")
+    root.iconbitmap("myIcon.ico")
     root.mainloop()
 
+#pyinstaller --icon=myIcon.ico main_app.py
 
 
 # spare code
