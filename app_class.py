@@ -4,6 +4,7 @@ import csv
 from pathlib import Path
 from tkinter import filedialog
 from analysis import Analysis
+from view_analysis import Viewer
 import matplotlib.pyplot as plt
 from skimage import io, img_as_ubyte
 
@@ -43,6 +44,8 @@ class App(tk.Frame):
         plt.imsave(sample_image_path, arr=sample_image, cmap="Greys")
 
         self.my_images.append(tk.PhotoImage(file=(sample_image_path)))
+        self.current_size = self.image_size=sample_image[0].size
+        self.canvas.config(width=self.current_size, height=self.current_size)
         self.image_on_canvas = self.canvas.create_image(
             0, 0, anchor='nw', image=self.my_images[0])
 
@@ -56,52 +59,61 @@ class App(tk.Frame):
         self.coords_shown = False
         self.current_row_index = 0
         self.current_coord_selected = None
+        self.current_analysis_image_label = None
 
     def _open_image_folder(self):
         self.directory = filedialog.askdirectory()
         self._initialize_image()
 
     def _createCanvas(self):
-        self.canvas = tk.Canvas(self.parent, width=600, height=600)
-        self.canvas.grid(row=0, column=0, sticky='nsew', columnspan=5)
+        self.canvas = tk.Canvas(self.parent, width=520, height=520, bg='white')
+        self.canvas.grid(row=0, column=0, sticky='nsew', columnspan=5, rowspan=3)
     
-    def _createCanvas_analysis(self):
-        self.canvas2 = tk.Canvas(self.parent, bg='#ffffff', width=50, height=50)
-        self.canvas2.grid(row=2, column=0, sticky='nsew')
 
     def _create_buttons(self):
         #Button(root, text="1", padx=40, pady=20, command=lambda: enter_number(1))
         self.save_coords_button = tk.Button(
-            self.parent, text="save_coords", padx=40, pady=20, command=self.save_coords)
-        self.save_coords_button.grid(row=1, column=0)
-
-        self.current_dir_button = tk.Button(
-            self.parent, text="open images", padx=40, pady=20, command=self._open_image_folder)
-        self.current_dir_button.grid(row=1, column=1)
+            self.parent, text="save coords", width=20, pady=20, command=self.save_coords)
+        self.save_coords_button.grid(row=3, column=0)
 
         self.delete_coords_button = tk.Button(
-            self.parent, text="delete coords", padx=40, pady=20, command=self.delete_coords)
-        self.delete_coords_button.grid(row=1, column=2)
+            self.parent, text="delete coords", width=20, pady=20, command=self.delete_coords)
+        self.delete_coords_button.grid(row=3, column=1)
 
         self.display_coords_button = tk.Button(
-            self.parent, text="display coords", padx=40, pady=20, command=self.display_coords)
-        self.display_coords_button.grid(row=1, column=3)
+            self.parent, text="display coords", width=20, pady=20, command=self.display_coords)
+        self.display_coords_button.grid(row=3, column=2)
+
 
         self.exit_button = tk.Button(
-            self.parent, text="Exit", padx=40, pady=20, command=self.master.destroy)
-        self.exit_button.grid(row=1, column=4)
+            self.parent, text="Exit", width=20, pady=20, command=self.master.destroy)
+        self.exit_button.grid(row=4, column=0)
+
+        self.current_dir_button = tk.Button(
+            self.parent, text="open images", width=20, pady=20, command=self._open_image_folder)
+        self.current_dir_button.grid(row=4, column=1)
+
+        self.open_analysis_window = tk.Button(self.parent, width=20, pady=20, bg="#88ffff",
+             text ="Open Analysis",
+             command = self.openAnalysisWindow)
+        self.open_analysis_window.grid(row=4, column=2)
+
+
+        ## analysis buttons
 
         self.analysis_button = tk.Button(
-            self.parent, bg="#882244", text="Start_analysis", padx=40, pady=20, command=self.start_analysis)
+            self.parent, bg="#88ffff", text="Start analysis", width=20, pady=20, command=self.start_analysis)
         self.analysis_button.grid(row=0, column=6, columnspan=2)
 
         self.select_coord_forward = tk.Button(
-            self.parent, bg="#882244", text="select_next_coord", padx=40, pady=20, command=lambda: self.select_coord('forward'))
+            self.parent, bg="#882244", text="select next coord", width=20, pady=20, command=lambda: self.select_coord('forward'))
         self.select_coord_forward.grid(row=1, column=6)
 
         self.select_coord_backward = tk.Button(
-            self.parent, bg="#882244", text="select_previous_coord", padx=40, pady=20, command=lambda: self.select_coord('backward'))
+            self.parent, bg="#882244", text="select previous coord", width=20, pady=20, command=lambda: self.select_coord('backward'))
         self.select_coord_backward.grid(row=1, column=7)
+
+        
 
     def _createCanvasBinding(self):
         self.canvas.bind("<Button-1>", self.startRect)
@@ -274,17 +286,56 @@ class App(tk.Frame):
 
         io.imsave(current_analysis_image_path, labelled_img_8bit)
 
-        # self._createCanvas_analysis()
+
+        if self.current_analysis_image_label is not None:
+            self.current_analysis_image_label.destroy()
+
+        current_analysis_image = (tk.PhotoImage(file=(current_analysis_image_path)))
+        self.current_analysis_image_label = tk.Label(image=current_analysis_image)
+        self.current_analysis_image_label.image = current_analysis_image # keep a reference!
+        self.current_analysis_image_label.grid(row=2, column=6, columnspan=2)
+    
+    def openAnalysisWindow(self):
         
-        current_analysis_photo = (tk.PhotoImage(file=(current_analysis_image_path)))
 
-        # self.current_analysis = self.canvas2.create_image(
-        #     (0, 0), anchor='nw', image=current_analysis_photo)
+        current_view = Viewer(self.directory)
+        num_cell_dirs, cell_images, cell_masks, data = current_view.select_cell_number()
 
-        photo = (tk.PhotoImage(file=(current_analysis_image_path)))
+        self.current_data = data
 
-        label = tk.Label(image=photo)
-        label.image = photo # keep a reference!
-        label.grid(row=3, column=0)
+        # Toplevel object which will
+        # be treated as a new window
+        analysis_window = tk.Toplevel(self.master)
+        analysis_window.title("New Window")
+        # sets the geometry of toplevel
+        analysis_window.geometry("200x200")
+    
+        # A Label widget to show in toplevel
+        variable = tk.StringVar(analysis_window)
+        cell_name_list = []
+        for i in range(num_cell_dirs):
+            cell_name = f"cell_{i+1}"
+            cell_name_list.append(cell_name)
+            
+        variable.set(cell_name_list[0]) # default value
+
+        cell_drop_down = tk.OptionMenu(analysis_window, variable, *cell_name_list)
+        cell_drop_down.grid(row=0, column=0)
+
+        self.image_scale = tk.Scale(analysis_window, from_=0, to=len(cell_images), orient=tk.HORIZONTAL, command=self.generate_graph)
+        self.image_scale.grid(row=1, column=0)
+
+
+    def generate_graph(self, slider_value):
+        
+        plt.close()
+        plt.scatter(x=self.current_data['Time'], y=self.current_data['Area'])
+        plt.axvline(x=slider_value)
+        plt.savefig("current.png")
+
+
+
+
+                
 
     # 3. display image on main widget

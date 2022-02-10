@@ -78,7 +78,7 @@ class Analysis():
         '''
         for path, label_path in zip(self.cell_save_paths, self.cell_save_paths_labelled):
             cell_collection = ski.io.imread_collection(
-                os.path.normpath(path + '/*.png'))[:-1]
+                os.path.normpath(path + '/*.png'))
 
             time_list = []
             area_list = []
