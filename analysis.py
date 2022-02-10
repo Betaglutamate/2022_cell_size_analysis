@@ -10,22 +10,23 @@ import pandas as pd
 
 
 class Analysis():
-    def __init__(self, path):
+    def __init__(self, path, coord_folder):
         self.path = path
+        self.coord_folder = coord_folder
         self._load_images()
         self.create_subcells()
         self.calculate_cell_area()
-
+        
     def _load_images(self):
         self.img_collection = ski.io.imread_collection(os.path.normpath(self.path + '/*.tif'))
-
 
     def create_subcells(self):
         #load images into sk ima
         self.cell_save_paths = []
+        self.cell_save_paths_labelled = []
         subcell_dict = {}
 
-        with open(os.path.normpath(self.path + '/coordinates.csv'), 'r') as file:
+        with open(os.path.normpath(os.path.join(self.coord_folder, 'coordinates.csv')), 'r') as file:
             reader = csv.reader(file)
             for row in reader:
                 coord =  [row[2], row[3], row[4], row[5]]
@@ -58,8 +59,14 @@ class Analysis():
             cell_save_path = os.path.join(self.path, f"cell_{enumerator}")
 
             Path(cell_save_path).mkdir(parents=True, exist_ok=True)
+            
+            cell_path_labelled = os.path.join(cell_save_path, "_labelled")
+
+            Path(cell_path_labelled).mkdir(parents=True, exist_ok=True)
+
 
             self.cell_save_paths.append(cell_save_path)
+            self.cell_save_paths_labelled.append(cell_path_labelled)
             
             for num, image in enumerate(self.img_collection):
                 cropped=image[y1:y2, x1:x2]
@@ -70,22 +77,29 @@ class Analysis():
         '''
         This function takes a cell subfolder and applies measure properties
         '''
-        for path in self.cell_save_paths:
+        for path, label_path in zip(self.cell_save_paths, self.cell_save_paths_labelled):
             cell_collection = ski.io.imread_collection(os.path.normpath(path + '/*.png'))[:-1]
 
             time_list = []
             area_list = []
 
             for num, image in enumerate(cell_collection):
-                area = self.measure_properties(image)
+                area, label_image = self.measure_properties(image)
                 time_list.append(num)
                 area_list.append(area)
-            
+                label_img_8bit = ski.img_as_ubyte(label_image)
+                ski.io.imsave(os.path.join(label_path, f"label_image_{num}.png"), label_img_8bit, check_contrast=False)
+
+            # Make analysis path
+            Path(os.path.normpath(os.path.join(path, "analysis"))).mkdir(parents=True, exist_ok=True)
+
+            # plot size over time
             fig, ax = plt.subplots()
             sns.scatterplot(ax=ax, x=time_list, y= area_list)
-            plt.savefig(os.path.join(path, "zz_cellplot.png"))
+            plt.savefig(os.path.normpath(os.path.join(path, "analysis", "zz_cellplot.png")))
+
             analysis_df = pd.DataFrame({"Time": time_list, "Area": area_list})
-            analysis_df.to_csv(os.path.join(path, "zz_cell_analysis.csv"))
+            analysis_df.to_csv(os.path.normpath(os.path.join(path, "analysis", "zz_cell_analysis.csv")))
         
 
 
@@ -127,7 +141,7 @@ class Analysis():
         ##save new image here
 
         max_area = max_area_list[probably_cell]
-        return max_area
+        return max_area, labelled_img
 
     def denoise_img(self, img):
         """estimate the noise standard deviation from the noisy image"""

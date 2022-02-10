@@ -1,6 +1,7 @@
 import tkinter as tk
 import os
 import csv
+from pathlib import Path
 from tkinter import filedialog
 from analysis import Analysis
 import matplotlib.pyplot as plt
@@ -10,13 +11,13 @@ class App(tk.Frame):
     def __init__(self, parent):
         tk.Frame.__init__(self, parent)
         self._createVariables(parent)
+        
         self._createCanvas()
         self._create_buttons()
         self._createCanvasBinding()
         self._open_image_folder()
         self._initialize_image()
         self.coords_shown = False
-
 
     def _initialize_image(self):
         self.loaded_image = []
@@ -29,15 +30,20 @@ class App(tk.Frame):
                     file_name = (os.path.join(root, name)).replace("\\","/")
                     self.loaded_image.append(file_name)
 
-        sample_image = io.imread(self.loaded_image[0])
-        plt.imsave(os.path.normpath(self.root + "/display_image.png"), arr=sample_image, cmap="Greys")
-        
+        ##make coord folder to save coord and display img
+        self.coord_folder = os.path.normpath(os.path.join(self.root, "coords"))
+        Path(self.coord_folder).mkdir(parents=True, exist_ok=True)
 
-        self.my_images.append(tk.PhotoImage(file=(os.path.normpath(self.root + "/display_image.png"))))
+        sample_image = io.imread(self.loaded_image[0])
+        sample_image_path = os.path.normpath(os.path.join(self.coord_folder, "display_image.png"))
+
+        plt.imsave(sample_image_path, arr=sample_image, cmap="Greys")
+        
+        self.my_images.append(tk.PhotoImage(file=(sample_image_path)))
         self.image_on_canvas = self.canvas.create_image(0, 0, anchor='nw', image=self.my_images[0])
 
     def start_analysis(self):
-        analysis = Analysis(self.root)
+        analysis = Analysis(self.root, self.coord_folder)
         analysis._load_images()
         analysis.create_subcells()
 
@@ -113,7 +119,7 @@ class App(tk.Frame):
         print('Rectangle ended')
     
     def save_coords(self):
-        with open(os.path.join(self.root, 'coordinates.csv'), 'a', newline='', encoding='UTF8') as f:
+        with open(os.path.join(self.coord_folder, 'coordinates.csv'), 'a', newline='', encoding='UTF8') as f:
             writer = csv.writer(f)
             writer.writerow([os.path.split(self.directory)[-1], self.rectid, self.rectx0, self.recty0,
                       self.rectx1, self.recty1])
@@ -129,7 +135,7 @@ class App(tk.Frame):
 
         self.all_shown_rect = []
         
-        with open(os.path.join(self.root, 'coordinates.csv'), 'r') as file:
+        with open(os.path.join(self.coord_folder, 'coordinates.csv'), 'r') as file:
             reader = csv.reader(file)
             for row in reader:
                 drawn_rect = self.canvas.create_rectangle(
@@ -153,11 +159,11 @@ class App(tk.Frame):
 
         #remove the last row of csv file
 
-        with open(os.path.join(self.root, 'coordinates.csv'), 'r+', newline='', encoding='UTF8') as f:
+        with open(os.path.join(self.coord_folder, 'coordinates.csv'), 'r+', newline='', encoding='UTF8') as f:
             all_lines = f.read().splitlines()
             f.truncate(0) #Deletes all current data
 
-        with open(os.path.join(self.root, 'coordinates.csv'), 'a', newline='', encoding='UTF8') as f:
+        with open(os.path.join(self.coord_folder, 'coordinates.csv'), 'a', newline='', encoding='UTF8') as f:
             writer = csv.writer(f)
             for row in all_lines[:-1]: #I add the -1 so last line doesnt get copied
                 split_row = row.split(',')
