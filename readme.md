@@ -1,9 +1,9 @@
 # Cell size analyser
 
 ## dependencies
-matplotlib
-skimage
-pandas
+matplotlib  
+skimage  
+pandas  
 
 ## quick start
 1. clone repository
