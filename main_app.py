@@ -3,23 +3,9 @@ from app_class import App
 
 if __name__ == "__main__":
     root = tk.Tk()
-    root.geometry( "1000x800" )
+    root.geometry("1200x800")
     app = App(root)
     root.title("Cell Analyser")
-    root.iconbitmap("myIcon.ico")
+    root.tk.call('wm', 'iconphoto', root._w,
+                 tk.PhotoImage(file='bacteria-icon.png'))
     root.mainloop()
-
-#pyinstaller --icon=myIcon.ico main_app.py
-
-
-# spare code
-
-
-# video_dir = "Volume_videos"
-
-# images = []
-
-# # for root, dirs, files in os.walk(video_dir, topdown=False):
-# #    for name in files:
-# #       file_name = (os.path.join(root, name))
-# #       images.append(file_name)
