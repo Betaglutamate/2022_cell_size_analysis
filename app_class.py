@@ -4,6 +4,7 @@ import os
 import csv
 from pathlib import Path
 from tkinter import filedialog
+from tkinter.tix import IMAGETEXT
 from analysis import Analysis
 from view_analysis import Viewer
 import matplotlib.pyplot as plt
@@ -305,35 +306,32 @@ class App(tk.Frame):
     
     def openAnalysisWindow(self):
         
-
+        #Get analysis data
         current_view = Viewer(self.directory)
         num_cell_dirs, cell_images, cell_masks, data = current_view.select_cell_number()
-
         self.current_data = data
 
-        # Toplevel object which will
-        # be treated as a new window
-        analysis_window = tk.Toplevel(self.master)
-        analysis_window.title("New Window")
-        # sets the geometry of toplevel
-        analysis_window.geometry("600x600")
-    
-        # A Label widget to show in toplevel
-        variable = tk.StringVar(analysis_window)
+        #Create new anlysis window
+        self.analysis_window = tk.Toplevel(self.master)
+        self.analysis_window.title("New Window")
+        self.analysis_window.geometry("600x600")
+        variable = tk.StringVar(self.analysis_window)
+
+        #Extract data to create widgets
         cell_name_list = []
         for i in range(num_cell_dirs):
             cell_name = f"cell_{i+1}"
-            cell_name_list.append(cell_name)
-            
+            cell_name_list.append(cell_name)   
         variable.set(cell_name_list[0]) # default value
 
-        cell_drop_down = tk.OptionMenu(analysis_window, variable, *cell_name_list)
+        cell_drop_down = tk.OptionMenu(self.analysis_window, variable, *cell_name_list)
         cell_drop_down.pack()
+        self.plot_matplotlib(data, cell_images, cell_masks)
 
-        # self.image_scale = tk.Scale(analysis_window, from_=0, to=len(cell_images), orient=tk.HORIZONTAL, command=self.generate_graph)
-        # self.image_scale.pack()
         
+        ###Implement matplotlib figure
 
+    def plot_matplotlib(self, data, cell_images, cell_masks):
         fig = Figure(figsize=(5, 4), dpi=100)
         t = data['Time']
         ax = fig.add_subplot()
@@ -343,24 +341,23 @@ class App(tk.Frame):
         int_ly = int(floor(lower_y))
         int_uy = int(ceil(upper_y))
         y_values = range(int_ly,int_uy)
-        x_values = [1]* len(range(int_ly,int_uy))
+        x_values = [0]* len(range(int_ly,int_uy))
 
         line2, = ax.plot(x_values, y_values)
         ax.set_xlabel("Area [pixels]")
         ax.set_ylabel("f(t)")
 
-        self.canvas_analysis = FigureCanvasTkAgg(fig, master=analysis_window)  # A tk.DrawingArea.
+        self.canvas_analysis = FigureCanvasTkAgg(fig, master=self.analysis_window)  # A tk.DrawingArea.
         self.canvas_analysis.draw()
 
-        # pack_toolbar=False will make it easier to use a layout manager later on.
-        # toolbar = NavigationToolbar2Tk(self.canvas_analysis, analysis_window, pack_toolbar=False)
-        # toolbar.update()
+        toolbar = NavigationToolbar2Tk(self.canvas_analysis, self.analysis_window, pack_toolbar=False)
+        toolbar.update()
 
-        # self.canvas_analysis.mpl_connect(
-        #     "key_press_event", lambda event: print(f"you pressed {event.key}"))
-        # self.canvas_analysis.mpl_connect("key_press_event", key_press_handler)
+        self.canvas_analysis.mpl_connect(
+            "key_press_event", lambda event: print(f"you pressed {event.key}"))
+        self.canvas_analysis.mpl_connect("key_press_event", key_press_handler)
 
-        # button_quit = tk.Button(master=analysis_window, text="Quit", command=analysis_window.destroy)
+        button_quit = tk.Button(master=self.analysis_window, text="Quit", command=self.analysis_window.destroy)
 
 
         def update_frequency(new_val):
@@ -373,27 +370,29 @@ class App(tk.Frame):
             # required to update canvas and attached toolbar!
             self.canvas_analysis.draw()
 
-        slider_update = tk.Scale(analysis_window, from_=1, to=len(cell_images), orient=tk.HORIZONTAL,
+        slider_update = tk.Scale(self.analysis_window, from_=0, to=len(cell_images)-1, orient=tk.HORIZONTAL,
                                     command=update_frequency, label="Frequency [Hz]")
 
         # Packing order is important. Widgets are processed sequentially and if there
         # is no space left, because the window is too small, they are not displayed.
         # The canvas is rather flexible in its size, so we pack it last which makes
         # sure the UI controls are displayed as long as possible.
-        # button_quit.pack(side=tk.BOTTOM)
+        button_quit.pack(side=tk.BOTTOM)
         slider_update.pack(side=tk.BOTTOM)
-        # toolbar.pack(side=tk.BOTTOM, fill=tk.X)
+        toolbar.pack(side=tk.BOTTOM, fill=tk.X)
         self.canvas_analysis.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
 
-    def generate_graph(self, slider_value):
-        
-        plt.close()
-        plt.scatter(x=self.current_data['Time'], y=self.current_data['Area'])
-        plt.axvline(x=slider_value)
-        plt.savefig("current.png")
+        ##make a label with image and place in window
+        # im = Image.open(pathToImage)
+        # ph = ImageTk.PhotoImage(im)
+
+        # label = Label(window, image=ph)
+        # label.image=ph 
+
+        self.matching_image = tk.Label(self.analysis_window, image=IMAGETEXT.PhotoImage(cell_images[0]))
+        self.matching_image.image = self.matching_image # keep a reference!
+        self.matching_image.pack()
 
 
 
-        
-    # 3. display image on main widget
