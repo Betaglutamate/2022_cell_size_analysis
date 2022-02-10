@@ -1,3 +1,4 @@
+from math import ceil, floor
 import tkinter as tk
 import os
 import csv
@@ -7,6 +8,13 @@ from analysis import Analysis
 from view_analysis import Viewer
 import matplotlib.pyplot as plt
 from skimage import io, img_as_ubyte
+from matplotlib.backends.backend_tkagg import (
+            FigureCanvasTkAgg, NavigationToolbar2Tk)
+# Implement the default Matplotlib key bindings.
+from matplotlib.backend_bases import key_press_handler
+from matplotlib.figure import Figure
+
+import numpy as np
 
 
 
@@ -308,7 +316,7 @@ class App(tk.Frame):
         analysis_window = tk.Toplevel(self.master)
         analysis_window.title("New Window")
         # sets the geometry of toplevel
-        analysis_window.geometry("200x200")
+        analysis_window.geometry("600x600")
     
         # A Label widget to show in toplevel
         variable = tk.StringVar(analysis_window)
@@ -320,10 +328,62 @@ class App(tk.Frame):
         variable.set(cell_name_list[0]) # default value
 
         cell_drop_down = tk.OptionMenu(analysis_window, variable, *cell_name_list)
-        cell_drop_down.grid(row=0, column=0)
+        cell_drop_down.pack()
 
-        self.image_scale = tk.Scale(analysis_window, from_=0, to=len(cell_images), orient=tk.HORIZONTAL, command=self.generate_graph)
-        self.image_scale.grid(row=1, column=0)
+        # self.image_scale = tk.Scale(analysis_window, from_=0, to=len(cell_images), orient=tk.HORIZONTAL, command=self.generate_graph)
+        # self.image_scale.pack()
+        
+
+        fig = Figure(figsize=(5, 4), dpi=100)
+        t = data['Time']
+        ax = fig.add_subplot()
+        line, = ax.plot(t, data['Area'])
+        lower_y, upper_y = ax.get_ylim()
+
+        int_ly = int(floor(lower_y))
+        int_uy = int(ceil(upper_y))
+        y_values = range(int_ly,int_uy)
+        x_values = [1]* len(range(int_ly,int_uy))
+
+        line2, = ax.plot(x_values, y_values)
+        ax.set_xlabel("Area [pixels]")
+        ax.set_ylabel("f(t)")
+
+        self.canvas_analysis = FigureCanvasTkAgg(fig, master=analysis_window)  # A tk.DrawingArea.
+        self.canvas_analysis.draw()
+
+        # pack_toolbar=False will make it easier to use a layout manager later on.
+        # toolbar = NavigationToolbar2Tk(self.canvas_analysis, analysis_window, pack_toolbar=False)
+        # toolbar.update()
+
+        # self.canvas_analysis.mpl_connect(
+        #     "key_press_event", lambda event: print(f"you pressed {event.key}"))
+        # self.canvas_analysis.mpl_connect("key_press_event", key_press_handler)
+
+        # button_quit = tk.Button(master=analysis_window, text="Quit", command=analysis_window.destroy)
+
+
+        def update_frequency(new_val):
+            # retrieve frequency
+            f = int(new_val)
+            # update data
+            x_values = [f]* len(range(int_ly,int_uy))
+            line2.set_data(x_values, y_values)
+
+            # required to update canvas and attached toolbar!
+            self.canvas_analysis.draw()
+
+        slider_update = tk.Scale(analysis_window, from_=1, to=len(cell_images), orient=tk.HORIZONTAL,
+                                    command=update_frequency, label="Frequency [Hz]")
+
+        # Packing order is important. Widgets are processed sequentially and if there
+        # is no space left, because the window is too small, they are not displayed.
+        # The canvas is rather flexible in its size, so we pack it last which makes
+        # sure the UI controls are displayed as long as possible.
+        # button_quit.pack(side=tk.BOTTOM)
+        slider_update.pack(side=tk.BOTTOM)
+        # toolbar.pack(side=tk.BOTTOM, fill=tk.X)
+        self.canvas_analysis.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
 
     def generate_graph(self, slider_value):
@@ -335,7 +395,5 @@ class App(tk.Frame):
 
 
 
-
-                
-
+        
     # 3. display image on main widget

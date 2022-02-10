@@ -29,9 +29,10 @@ class Analysis():
 
         with open(os.path.normpath(os.path.join(self.coord_folder, 'coordinates.csv')), 'r') as file:
             reader = csv.reader(file)
-            for row in reader:
+            for num, row in enumerate(reader):
+                print(f"processing {row}")
                 coord = [row[2], row[3], row[4], row[5]]
-                subcell_dict[str(row[1])] = coord
+                subcell_dict[str(row[1] + str(num))] = coord
         # load coordinates
         # crop
         enumerator = 0
