@@ -5,7 +5,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import ndimage
-import seaborn as sns
 import pandas as pd
 
 
@@ -95,7 +94,7 @@ class Analysis():
 
             # plot size over time
             fig, ax = plt.subplots()
-            sns.scatterplot(ax=ax, x=time_list, y= area_list)
+            ax.scatter(x=time_list, y= area_list)
             plt.savefig(os.path.normpath(os.path.join(path, "analysis", "zz_cellplot.png")))
 
             analysis_df = pd.DataFrame({"Time": time_list, "Area": area_list})
