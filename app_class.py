@@ -326,6 +326,31 @@ class App(tk.Frame):
 
         cell_drop_down = tk.OptionMenu(self.analysis_window, variable, *cell_name_list)
         cell_drop_down.pack()
+        
+        from PIL import Image, ImageTk
+
+        from skimage.transform import rescale, resize, downscale_local_mean
+
+
+        im = cell_masks[0]
+        pi = Image.fromarray(im)
+
+        (width, height) = (pi.width * 4, pi.height * 4)
+        im_resized = pi.resize((width, height))
+
+        self.current_cell_image = ImageTk.PhotoImage(im_resized)
+
+
+        # current_analysis_image = (tk.PhotoImage(file=(current_analysis_image_path)))
+        # self.current_analysis_image_label = tk.Label(image=current_analysis_image)
+        # self.current_analysis_image_label.image = current_analysis_image # keep a reference!
+        # self.current_analysis_image_label.grid(row=2, column=6, columnspan=2)
+
+        self.matching_image = tk.Label(self.analysis_window, image=self.current_cell_image)
+        self.matching_image.image = self.current_cell_image # keep a reference!
+        self.matching_image.pack()
+
+
         self.plot_matplotlib(data, cell_images, cell_masks)
 
         
@@ -390,9 +415,7 @@ class App(tk.Frame):
         # label = Label(window, image=ph)
         # label.image=ph 
 
-        self.matching_image = tk.Label(self.analysis_window, image=IMAGETEXT.PhotoImage(cell_images[0]))
-        self.matching_image.image = self.matching_image # keep a reference!
-        self.matching_image.pack()
+        
 
 
 
