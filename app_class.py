@@ -317,6 +317,11 @@ class App(tk.Frame):
         self.analysis_window.geometry("600x600")
         variable = tk.StringVar(self.analysis_window)
 
+        ##CREATE frame
+
+        frame = tk.Frame(self.analysis_window, relief=tk.RAISED, borderwidth=1)
+        frame.pack(fill=tk.BOTH, expand=True)
+
         #Extract data to create widgets
         cell_name_list = []
         for i in range(num_cell_dirs):
@@ -324,31 +329,38 @@ class App(tk.Frame):
             cell_name_list.append(cell_name)   
         variable.set(cell_name_list[0]) # default value
 
-        cell_drop_down = tk.OptionMenu(self.analysis_window, variable, *cell_name_list)
-        cell_drop_down.pack()
+        cell_drop_down = tk.OptionMenu(frame, variable, *cell_name_list)
+        cell_drop_down.pack(side = tk.LEFT)
         
         from PIL import Image, ImageTk
 
-        from skimage.transform import rescale, resize, downscale_local_mean
 
+        
+        # self.analysis_window.pack(fill=tk.BOTH, expand=True)
 
-        im = cell_masks[0]
-        pi = Image.fromarray(im)
-
+        ### add current cell mask
+        current_cell_mask = cell_masks[0]
+        pi = Image.fromarray(current_cell_mask)
         (width, height) = (pi.width * 4, pi.height * 4)
-        im_resized = pi.resize((width, height))
+        current_cell_mask_resized = pi.resize((width, height))
 
-        self.current_cell_image = ImageTk.PhotoImage(im_resized)
+        self.current_cell_mask = ImageTk.PhotoImage(current_cell_mask_resized)
+        self.matching_mask = tk.Label(frame, image=self.current_cell_mask)
+        self.matching_mask.image = self.current_cell_mask # keep a reference!
+        self.matching_mask.pack(side = tk.RIGHT)
 
+        ### add current cell image
 
-        # current_analysis_image = (tk.PhotoImage(file=(current_analysis_image_path)))
-        # self.current_analysis_image_label = tk.Label(image=current_analysis_image)
-        # self.current_analysis_image_label.image = current_analysis_image # keep a reference!
-        # self.current_analysis_image_label.grid(row=2, column=6, columnspan=2)
+        from matplotlib import cm
+        current_cell_image = cell_images[0]
+        pi = Image.fromarray(np.uint8(cm.gist_earth(current_cell_image)*255))
+        (width, height) = (pi.width * 4, pi.height * 4)
+        current_cell_image_resized = pi.resize((width, height))
 
-        self.matching_image = tk.Label(self.analysis_window, image=self.current_cell_image)
+        self.current_cell_image = ImageTk.PhotoImage(current_cell_image_resized)
+        self.matching_image = tk.Label(frame, image=self.current_cell_image)
         self.matching_image.image = self.current_cell_image # keep a reference!
-        self.matching_image.pack()
+        self.matching_image.pack(side = tk.RIGHT)
 
 
         self.plot_matplotlib(data, cell_images, cell_masks)
