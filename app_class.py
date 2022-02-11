@@ -351,9 +351,20 @@ class App(tk.Frame):
 
         ### add current cell image
 
-        from matplotlib import cm
-        current_cell_image = cell_images[0]
-        pi = Image.fromarray(np.uint8(cm.gist_earth(current_cell_image)*255))
+        from skimage import exposure, img_as_uint
+        # current_cell_image = cell_images[0]
+
+        current_cell_image = exposure.adjust_gamma(cell_images[0], 2)
+
+# Logarithmic
+        logarithmic_corrected = exposure.adjust_log(cell_images[0], 8)
+        logarithmic_corrected = img_as_ubyte(logarithmic_corrected)
+        
+        # test_im = (np.uint8(cm.Greys(np.uint8(current_cell_image))*255))
+
+        # from matplotlib import cm
+
+        pi = Image.fromarray(logarithmic_corrected)
         (width, height) = (pi.width * 4, pi.height * 4)
         current_cell_image_resized = pi.resize((width, height))
 
