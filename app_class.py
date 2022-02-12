@@ -2,9 +2,10 @@ from math import ceil, floor
 import tkinter as tk
 import os
 import csv
+from PIL import Image, ImageTk
 from pathlib import Path
 from tkinter import filedialog
-from tkinter.tix import IMAGETEXT
+from skimage import exposure
 from analysis import Analysis
 from view_analysis import Viewer
 import matplotlib.pyplot as plt
@@ -14,10 +15,6 @@ from matplotlib.backends.backend_tkagg import (
 # Implement the default Matplotlib key bindings.
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
-
-import numpy as np
-
-
 
 class App(tk.Frame):
     def __init__(self, parent):
@@ -305,95 +302,92 @@ class App(tk.Frame):
         self.current_analysis_image_label.grid(row=2, column=6, columnspan=2)
     
     def openAnalysisWindow(self):
-        
-        #Get analysis data
-        current_view = Viewer(self.directory)
-        num_cell_dirs, cell_images, cell_masks, data = current_view.select_cell_number()
-        self.current_data = data
-
         #Create new anlysis window
         self.analysis_window = tk.Toplevel(self.master)
         self.analysis_window.title("New Window")
         self.analysis_window.geometry("600x600")
-        variable = tk.StringVar(self.analysis_window)
+        self.dropdown = tk.StringVar(self.analysis_window)
 
         ##CREATE frame
 
-        frame = tk.Frame(self.analysis_window, relief=tk.RAISED, borderwidth=1)
-        frame.pack(fill=tk.BOTH, expand=True)
+        self.analysis_frame = tk.Frame(self.analysis_window, relief=tk.RAISED, borderwidth=1)
+        self.analysis_frame.pack(fill=tk.BOTH, expand=True)
+        self.get_analysis_data()
 
+    def get_analysis_data(self):
+        #Get analysis data
+        current_view = Viewer(self.directory)
+        num_cell_dirs, self.all_cell_images, self.all_cell_masks, self.all_cell_data = current_view.select_cell_number()
         #Extract data to create widgets
         cell_name_list = []
+
         for i in range(num_cell_dirs):
             cell_name = f"cell_{i+1}"
             cell_name_list.append(cell_name)   
-        variable.set(cell_name_list[0]) # default value
+        self.dropdown.set(cell_name_list[0]) # default value
 
-        cell_drop_down = tk.OptionMenu(frame, variable, *cell_name_list)
+        cell_drop_down = tk.OptionMenu(self.analysis_frame, self.dropdown, *cell_name_list, command=self.update_cell_analysis)
         cell_drop_down.pack(side = tk.LEFT)
-        
-        from PIL import Image, ImageTk
-
 
         
-        # self.analysis_window.pack(fill=tk.BOTH, expand=True)
+        self.place_analysis_images(self.all_cell_masks[0], self.all_cell_images[0])
+        self.plot_matplotlib(self.all_cell_data[0], self.all_cell_images[0], self.all_cell_masks[0])
+        
 
-        ### add current cell mask
+    def update_cell_analysis(self, new_val):
+
+        current_number = int(new_val[-1])
+
+        self.currently_selected_cell_images = self.all_cell_images[current_number]
+        self.currently_selected_cell_masks = self.all_cell_masks[current_number]
+        self.currently_selected_cell_data = self.all_cell_data[current_number]
+
+        self.place_analysis_images(self.currently_selected_cell_masks, self.currently_selected_cell_images)
+        self.plot_matplotlib(self.currently_selected_cell_data, self.currently_selected_cell_image, self.currently_selected_cell_masks)
+
+    def place_analysis_images(self, cell_masks, cell_images):
+            ### add current cell mask
         current_cell_mask = cell_masks[0]
         pi = Image.fromarray(current_cell_mask)
         (width, height) = (pi.width * 4, pi.height * 4)
         current_cell_mask_resized = pi.resize((width, height))
 
         self.current_cell_mask = ImageTk.PhotoImage(current_cell_mask_resized)
-        self.matching_mask = tk.Label(frame, image=self.current_cell_mask)
+        self.matching_mask = tk.Label(self.analysis_frame, image=self.current_cell_mask)
         self.matching_mask.image = self.current_cell_mask # keep a reference!
         self.matching_mask.pack(side = tk.RIGHT)
-
-        ### add current cell image
-
-        from skimage import exposure, img_as_uint
-        # current_cell_image = cell_images[0]
-
-        current_cell_image = exposure.adjust_gamma(cell_images[0], 2)
-
-# Logarithmic
         logarithmic_corrected = exposure.adjust_log(cell_images[0], 8)
         logarithmic_corrected = img_as_ubyte(logarithmic_corrected)
-        
-        # test_im = (np.uint8(cm.Greys(np.uint8(current_cell_image))*255))
-
-        # from matplotlib import cm
 
         pi = Image.fromarray(logarithmic_corrected)
         (width, height) = (pi.width * 4, pi.height * 4)
         current_cell_image_resized = pi.resize((width, height))
 
         self.current_cell_image = ImageTk.PhotoImage(current_cell_image_resized)
-        self.matching_image = tk.Label(frame, image=self.current_cell_image)
+        self.matching_image = tk.Label(self.analysis_frame, image=self.current_cell_image)
         self.matching_image.image = self.current_cell_image # keep a reference!
         self.matching_image.pack(side = tk.RIGHT)
 
-
-        self.plot_matplotlib(data, cell_images, cell_masks)
-
+        
         
         ###Implement matplotlib figure
 
     def plot_matplotlib(self, data, cell_images, cell_masks):
+
+        self.x_values, self.y_values = data['Time'], data['Area']
+        
         fig = Figure(figsize=(5, 4), dpi=100)
-        t = data['Time']
         ax = fig.add_subplot()
-        line, = ax.plot(t, data['Area'])
+        self.line2, = ax.plot(self.x_values, self.y_values)
         lower_y, upper_y = ax.get_ylim()
 
-        int_ly = int(floor(lower_y))
-        int_uy = int(ceil(upper_y))
-        y_values = range(int_ly,int_uy)
-        x_values = [0]* len(range(int_ly,int_uy))
+        self.int_ly = int(floor(lower_y))
+        self.int_uy = int(ceil(upper_y))
+        self.y_values = range(self.int_ly,self.int_uy)
+        self.x_values = [0]* len(range(self.int_ly,self.int_uy))
 
-        line2, = ax.plot(x_values, y_values)
-        ax.set_xlabel("Area [pixels]")
-        ax.set_ylabel("f(t)")
+        ax.set_ylabel("Area [pixels]")
+        ax.set_xlabel("frame")
 
         self.canvas_analysis = FigureCanvasTkAgg(fig, master=self.analysis_window)  # A tk.DrawingArea.
         self.canvas_analysis.draw()
@@ -407,19 +401,8 @@ class App(tk.Frame):
 
         button_quit = tk.Button(master=self.analysis_window, text="Quit", command=self.analysis_window.destroy)
 
-
-        def update_frequency(new_val):
-            # retrieve frequency
-            f = int(new_val)
-            # update data
-            x_values = [f]* len(range(int_ly,int_uy))
-            line2.set_data(x_values, y_values)
-
-            # required to update canvas and attached toolbar!
-            self.canvas_analysis.draw()
-
         slider_update = tk.Scale(self.analysis_window, from_=0, to=len(cell_images)-1, orient=tk.HORIZONTAL,
-                                    command=update_frequency, label="Frequency [Hz]")
+                                    command=self.update_frequency, label="Frequency [Hz]")
 
         # Packing order is important. Widgets are processed sequentially and if there
         # is no space left, because the window is too small, they are not displayed.
@@ -430,14 +413,15 @@ class App(tk.Frame):
         toolbar.pack(side=tk.BOTTOM, fill=tk.X)
         self.canvas_analysis.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
-
-        ##make a label with image and place in window
-        # im = Image.open(pathToImage)
-        # ph = ImageTk.PhotoImage(im)
-
-        # label = Label(window, image=ph)
-        # label.image=ph 
-
+ 
+    def update_frequency(self, new_val):
+            # retrieve frequency
+            f = int(new_val)
+            # update data
+            self.x_values = [f]* len(range(self.int_ly, self.int_uy))
+            self.line2.set_data(self.x_values, self.y_values)
+            # required to update canvas and attached toolbar!
+            self.canvas_analysis.draw()
         
 
 

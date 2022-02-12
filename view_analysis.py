@@ -12,12 +12,20 @@ class Viewer():
         cell_analysis_dirs = glob.glob('test_images/cell*')
         num_cell_dirs = len(cell_analysis_dirs)
 
+        all_cell_images = []
+        all_cell_masks = []
+        all_cell_data = []
+
         for dir in cell_analysis_dirs:
             cell_images = io.imread_collection(dir + '/*.png')
             cell_masks = io.imread_collection(dir + '/_labelled'+ '/*.png')
             data = pd.read_csv(dir + '/analysis' + '/zz_cell_analysis.csv')
+            all_cell_images.append(cell_images)
+            all_cell_masks.append(cell_masks)
+            all_cell_data.append(data)
 
-        return num_cell_dirs, cell_images, cell_masks, data
+
+        return num_cell_dirs, all_cell_images, all_cell_masks, all_cell_data
 
 
     # open the images
