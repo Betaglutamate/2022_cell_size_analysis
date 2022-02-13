@@ -134,9 +134,7 @@ class App(tk.Frame):
         # Create rectangle
         self.rectid = self.canvas.create_rectangle(
             self.rectx0, self.recty0, self.rectx0, self.recty0, outline="#4eccde")
-        print('Rectangle {0} started at {1} {2} {3} {4} '.
-              format(self.rectid, self.rectx0, self.recty0, self.rectx0,
-                     self.recty0))
+
 
     def movingRect(self, event):
         # Translate mouse screen x1,y1 coordinates to canvas coordinates
@@ -145,27 +143,44 @@ class App(tk.Frame):
         # Modify rectangle x1, y1 coordinates
         self.canvas.coords(self.rectid, self.rectx0, self.recty0,
                            self.rectx1, self.recty1)
-        print('Rectangle x1, y1 = ', self.rectx1, self.recty1)
 
     def stopRect(self, event):
-        # Translate mouse screen x1,y1 coordinates to canvas coordinates
+        """
+        This function receives final rectangle coords
+        """
         self.rectx1 = self.canvas.canvasx(event.x)
         self.recty1 = self.canvas.canvasy(event.y)
         # Modify rectangle x1, y1 coordinates
         self.canvas.coords(self.rectid, self.rectx0, self.recty0,
                            self.rectx1, self.recty1)
-        print('Rectangle ended')
 
     def save_coords(self):
-        with open(os.path.join(self.coord_folder, 'coordinates.csv'), 'a', newline='', encoding='UTF8') as f:
+        self.coord_file = os.path.join(self.coord_folder, 'coordinates.csv')
+
+        with open(self.coord_file, 'a+', newline='', encoding='UTF8') as f:
             writer = csv.writer(f)
-            writer.writerow([os.path.split(self.directory)[-1], self.rectid, self.rectx0, self.recty0,
-                             self.rectx1, self.recty1])
+            current_row = [os.path.split(self.directory)[-1], self.rectid, self.rectx0, self.recty0,
+                      self.rectx1, self.recty1] 
+            writer.writerow(current_row)
+
+
+        ## check for duplicates
+        with open(self.coord_file, newline='', encoding='UTF8') as f:
+            data = list(csv.reader(f))
+            new_data = [a for i, a in enumerate(data) if a not in data[:i]]
+        with open(self.coord_file, 'w', newline='', encoding='UTF8') as t:
+            write = csv.writer(t)
+            write.writerows(new_data)
+                
+
         self.canvas.delete(self.rectid)
 
         if self.coords_shown:
             self.hide_coords()
             self.display_coords()
+
+
+
 
     def display_coords(self):
         self.coords_shown = True
@@ -228,18 +243,13 @@ class App(tk.Frame):
         
         ## select coordinate
         if direction == "forward":
-            print(self.current_row_index)
-            print("going forward")
             
             if self.current_row_index > len(all_coords)-1:
                 self.current_row_index = 0
             current_row = all_coords[self.current_row_index]
             self.current_row_index = self.current_row_index + 1
-            print(self.current_row_index)
         
         if direction == "backward":
-            print(self.current_row_index)
-            print("going backward")
             
             if self.current_row_index < 0:
                 self.current_row_index = len(all_coords)-1
@@ -248,7 +258,6 @@ class App(tk.Frame):
 
             current_row = all_coords[self.current_row_index]
             self.current_row_index = self.current_row_index -1
-            print(self.current_row_index)
         
         return current_row
 
