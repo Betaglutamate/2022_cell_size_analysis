@@ -65,7 +65,6 @@ class App(tk.Frame):
         self.coords_shown = False
         self.current_row_index = 0
         self.current_coord_selected = None
-        self.current_analysis_image_label = None
 
     def _open_image_folder(self):
         self.directory = filedialog.askdirectory()
@@ -317,6 +316,16 @@ class App(tk.Frame):
         self.analysis_window.geometry("600x600")
         self.dropdown = tk.StringVar(self.analysis_window)
 
+        ##CREATE analysis variables
+
+        self.matching_mask = None
+        self.canvas_analysis = None
+        self.toolbar = None
+        self.current_analysis_image_label = None
+        self.button_quit = None
+        self.slider_update = None
+
+
         ##CREATE frame
 
         self.analysis_frame = tk.Frame(self.analysis_window, relief=tk.RAISED, borderwidth=1)
@@ -338,25 +347,40 @@ class App(tk.Frame):
         cell_drop_down = tk.OptionMenu(self.analysis_frame, self.dropdown, *cell_name_list, command=self.update_cell_analysis)
         cell_drop_down.pack(side = tk.LEFT)
 
+
+        self.currently_selected_cell_images = self.all_cell_images[0]
+        self.currently_selected_cell_masks = self.all_cell_masks[0]
+        self.currently_selected_cell_data = self.all_cell_data[0]
         
-        self.place_analysis_images(self.all_cell_masks[0], self.all_cell_images[0])
-        self.plot_matplotlib(self.all_cell_data[0], self.all_cell_images[0], self.all_cell_masks[0])
+        self.place_analysis_images(self.currently_selected_cell_masks, self.currently_selected_cell_images)
+        self.plot_matplotlib(self.currently_selected_cell_data)
         
 
     def update_cell_analysis(self, new_val):
 
-        current_number = int(new_val[-1])
+        current_number = int(new_val[-1])-1 ## so first i get the name like cell_number 4 then I get the last digit
+        #then I subtract 1 because cell 1 is index 0
+
+        ## find out how to make it work with double digits
 
         self.currently_selected_cell_images = self.all_cell_images[current_number]
         self.currently_selected_cell_masks = self.all_cell_masks[current_number]
         self.currently_selected_cell_data = self.all_cell_data[current_number]
 
-        self.place_analysis_images(self.currently_selected_cell_masks, self.currently_selected_cell_images)
-        self.plot_matplotlib(self.currently_selected_cell_data, self.currently_selected_cell_image, self.currently_selected_cell_masks)
 
-    def place_analysis_images(self, cell_masks, cell_images):
-            ### add current cell mask
-        current_cell_mask = cell_masks[0]
+        self.place_analysis_images(self.currently_selected_cell_masks, self.currently_selected_cell_images)
+        self.plot_matplotlib(self.currently_selected_cell_data)
+
+    def place_analysis_images(self, cell_masks, cell_images, current_image_number = 0):
+        ### add current cell mask
+
+        ##remove previous cell label
+
+        if self.matching_mask is not None:
+            self.matching_mask.destroy()
+            self.matching_image.destroy()
+        
+        current_cell_mask = cell_masks[current_image_number]
         pi = Image.fromarray(current_cell_mask)
         (width, height) = (pi.width * 4, pi.height * 4)
         current_cell_mask_resized = pi.resize((width, height))
@@ -365,7 +389,10 @@ class App(tk.Frame):
         self.matching_mask = tk.Label(self.analysis_frame, image=self.current_cell_mask)
         self.matching_mask.image = self.current_cell_mask # keep a reference!
         self.matching_mask.pack(side = tk.RIGHT)
-        logarithmic_corrected = exposure.adjust_log(cell_images[0], 8)
+        
+        ##place image
+        
+        logarithmic_corrected = exposure.adjust_log(cell_images[current_image_number], 8)
         logarithmic_corrected = img_as_ubyte(logarithmic_corrected)
 
         pi = Image.fromarray(logarithmic_corrected)
@@ -381,19 +408,26 @@ class App(tk.Frame):
         
         ###Implement matplotlib figure
 
-    def plot_matplotlib(self, data, cell_images, cell_masks):
+    def plot_matplotlib(self, data):
 
+        if self.canvas_analysis is not None:
+            self.canvas_analysis.get_tk_widget().destroy()
+            self.toolbar.destroy()
+            self.button_quit.destroy()
+            self.slider_update.destroy()
+            
         self.x_values, self.y_values = data['Time'], data['Area']
         
         fig = Figure(figsize=(5, 4), dpi=100)
         ax = fig.add_subplot()
-        self.line2, = ax.plot(self.x_values, self.y_values)
-        lower_y, upper_y = ax.get_ylim()
+        self.main_plot_image, = ax.plot(self.x_values, self.y_values)
 
+        lower_y, upper_y = ax.get_ylim()
         self.int_ly = int(floor(lower_y))
         self.int_uy = int(ceil(upper_y))
-        self.y_values = range(self.int_ly,self.int_uy)
-        self.x_values = [0]* len(range(self.int_ly,self.int_uy))
+        self.y_values_vline = range(self.int_ly,self.int_uy)
+        self.x_values_vline = [0]* len(range(self.int_ly,self.int_uy))
+        self.line2, = ax.plot(self.x_values_vline, self.y_values_vline)
 
         ax.set_ylabel("Area [pixels]")
         ax.set_xlabel("frame")
@@ -401,36 +435,44 @@ class App(tk.Frame):
         self.canvas_analysis = FigureCanvasTkAgg(fig, master=self.analysis_window)  # A tk.DrawingArea.
         self.canvas_analysis.draw()
 
-        toolbar = NavigationToolbar2Tk(self.canvas_analysis, self.analysis_window, pack_toolbar=False)
-        toolbar.update()
+        self.toolbar = NavigationToolbar2Tk(self.canvas_analysis, self.analysis_window, pack_toolbar=False)
+        self.toolbar.update()
 
         self.canvas_analysis.mpl_connect(
             "key_press_event", lambda event: print(f"you pressed {event.key}"))
         self.canvas_analysis.mpl_connect("key_press_event", key_press_handler)
 
-        button_quit = tk.Button(master=self.analysis_window, text="Quit", command=self.analysis_window.destroy)
+        self.button_quit = tk.Button(master=self.analysis_window, text="Quit", command=self.analysis_window.destroy)
 
-        slider_update = tk.Scale(self.analysis_window, from_=0, to=len(cell_images)-1, orient=tk.HORIZONTAL,
+        self.slider_update = tk.Scale(self.analysis_window, from_=0, to=len(data)-1, orient=tk.HORIZONTAL,
                                     command=self.update_frequency, label="Frequency [Hz]")
 
         # Packing order is important. Widgets are processed sequentially and if there
         # is no space left, because the window is too small, they are not displayed.
         # The canvas is rather flexible in its size, so we pack it last which makes
         # sure the UI controls are displayed as long as possible.
-        button_quit.pack(side=tk.BOTTOM)
-        slider_update.pack(side=tk.BOTTOM)
-        toolbar.pack(side=tk.BOTTOM, fill=tk.X)
+        self.button_quit.pack(side=tk.BOTTOM)
+        self.slider_update.pack(side=tk.BOTTOM)
+        self.toolbar.pack(side=tk.BOTTOM, fill=tk.X)
         self.canvas_analysis.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
  
     def update_frequency(self, new_val):
             # retrieve frequency
-            f = int(new_val)
+            current_slider_val = int(new_val)
             # update data
-            self.x_values = [f]* len(range(self.int_ly, self.int_uy))
-            self.line2.set_data(self.x_values, self.y_values)
+            self.x_values = [current_slider_val]* len(range(self.int_ly, self.int_uy))
+
+            self.y_values_vline = range(self.int_ly,self.int_uy)
+            self.line2.set_data(self.x_values, self.y_values_vline)
             # required to update canvas and attached toolbar!
             self.canvas_analysis.draw()
+
+            ##update images
+
+            self.place_analysis_images(self.currently_selected_cell_masks, self.currently_selected_cell_images, current_slider_val)
+
+
         
 
 
