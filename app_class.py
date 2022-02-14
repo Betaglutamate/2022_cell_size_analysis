@@ -392,7 +392,7 @@ class App(tk.Frame):
         
         ##place image
         
-        logarithmic_corrected = exposure.adjust_log(cell_images[current_image_number], 8)
+        logarithmic_corrected = exposure.rescale_intensity(cell_images[current_image_number])
         logarithmic_corrected = img_as_ubyte(logarithmic_corrected)
 
         pi = Image.fromarray(logarithmic_corrected)

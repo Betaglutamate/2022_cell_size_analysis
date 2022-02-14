@@ -113,6 +113,7 @@ class Analysis():
             regions
         '''
         d_img = self.denoise_img(image)
+        d_img = ski.exposure.rescale_intensity(d_img)
         thresh = ski.filters.threshold_otsu(d_img)
         binary = d_img < thresh
         label_im = ski.measure.label(binary)
