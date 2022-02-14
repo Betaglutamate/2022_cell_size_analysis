@@ -73,6 +73,8 @@ class Analysis():
                 ski.io.imsave(os.path.join(
                     cell_save_path, f"cell_{enumerator}_id{k}_{num}.png"), cropped, check_contrast=False)
 
+            print("finished_processing")
+
     def calculate_cell_area(self):
         '''
         This function takes a cell subfolder and applies measure properties

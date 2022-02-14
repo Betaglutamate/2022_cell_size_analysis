@@ -65,6 +65,8 @@ class App(tk.Frame):
         self.coords_shown = False
         self.current_row_index = 0
         self.current_coord_selected = None
+        self.current_analysis_image_label = None
+
 
     def _open_image_folder(self):
         self.directory = filedialog.askdirectory()
@@ -421,6 +423,7 @@ class App(tk.Frame):
         fig = Figure(figsize=(5, 4), dpi=100)
         ax = fig.add_subplot()
         self.main_plot_image, = ax.plot(self.x_values, self.y_values)
+        ax.set_ylim([data['Area'][0]*0.5, data['Area'][0]*1.25])
 
         lower_y, upper_y = ax.get_ylim()
         self.int_ly = int(floor(lower_y))
