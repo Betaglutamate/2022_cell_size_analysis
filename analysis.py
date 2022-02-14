@@ -1,6 +1,7 @@
 from skimage import io, img_as_ubyte
 from skimage.filters import threshold_otsu
 from skimage.measure import label, regionprops
+from skimage.exposure import rescale_intensity
 from skimage.color import label2rgb
 from skimage.restoration import denoise_nl_means, estimate_sigma
 import os
@@ -77,6 +78,8 @@ class Analysis():
                 io.imsave(os.path.join(
                     cell_save_path, f"cell_{enumerator}_id{k}_{num}.png"), cropped, check_contrast=False)
 
+            print("finished_processing")
+
     def calculate_cell_area(self):
         '''
         This function takes a cell subfolder and applies measure properties
@@ -117,6 +120,7 @@ class Analysis():
             regions
         '''
         d_img = self.denoise_img(image)
+        d_img = rescale_intensity(d_img)
         thresh = threshold_otsu(d_img)
         binary = d_img < thresh
         label_im = label(binary)

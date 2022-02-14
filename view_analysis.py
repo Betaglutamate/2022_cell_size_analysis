@@ -9,7 +9,7 @@ class Viewer():
 
     # select cell number
     def select_cell_number(self):
-        cell_analysis_dirs = glob.glob('test_images/cell*')
+        cell_analysis_dirs = glob.glob(f'{self.directory}/cell*')
         num_cell_dirs = len(cell_analysis_dirs)
 
         all_cell_images = []
