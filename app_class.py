@@ -8,7 +8,7 @@ from tkinter import filedialog
 from skimage import exposure
 from analysis import Analysis
 from view_analysis import Viewer
-import matplotlib.pyplot as plt
+from matplotlib.pyplot import imsave
 from skimage import io, img_as_ubyte
 from matplotlib.backends.backend_tkagg import (
             FigureCanvasTkAgg, NavigationToolbar2Tk)
@@ -47,7 +47,7 @@ class App(tk.Frame):
         sample_image_path = os.path.normpath(
             os.path.join(self.coord_folder, "display_image.png"))
 
-        plt.imsave(sample_image_path, arr=sample_image, cmap="Greys")
+        imsave(sample_image_path, arr=sample_image, cmap="Greys")
 
         self.my_images.append(tk.PhotoImage(file=(sample_image_path)))
         self.current_size = self.image_size=sample_image[0].size
@@ -312,8 +312,8 @@ class App(tk.Frame):
     def openAnalysisWindow(self):
         #Create new anlysis window
         self.analysis_window = tk.Toplevel(self.master)
-        self.analysis_window.title("New Window")
-        self.analysis_window.geometry("600x600")
+        self.analysis_window.title("Analysis")
+        self.analysis_window.geometry("1000x600")
         self.dropdown = tk.StringVar(self.analysis_window)
 
         ##CREATE analysis variables
@@ -344,7 +344,10 @@ class App(tk.Frame):
             cell_name_list.append(cell_name)   
         self.dropdown.set(cell_name_list[0]) # default value
 
+
         cell_drop_down = tk.OptionMenu(self.analysis_frame, self.dropdown, *cell_name_list, command=self.update_cell_analysis)
+        cell_drop_down.configure(width=20, height= 5, bg="#03a9f4")
+        cell_drop_down['menu'].config(bg="#03a9f4")
         cell_drop_down.pack(side = tk.LEFT)
 
 
@@ -357,8 +360,9 @@ class App(tk.Frame):
         
 
     def update_cell_analysis(self, new_val):
-
-        current_number = int(new_val[-1])-1 ## so first i get the name like cell_number 4 then I get the last digit
+        
+        current_number = [s for s in new_val.split('_')][-1]
+        current_number = int(current_number)-1 ## so first i get the name like cell_number 4 then I get the last digit
         #then I subtract 1 because cell 1 is index 0
 
         ## find out how to make it work with double digits
@@ -382,7 +386,16 @@ class App(tk.Frame):
         
         current_cell_mask = cell_masks[current_image_number]
         pi = Image.fromarray(current_cell_mask)
-        (width, height) = (pi.width * 4, pi.height * 4)
+        
+        height = 600
+        self.max_image_size = 200
+        multiplier = 8
+
+        while height > self.max_image_size:
+            multiplier = multiplier - 1
+            (width, height) = (pi.width * multiplier, pi.height * multiplier)
+
+        
         current_cell_mask_resized = pi.resize((width, height))
 
         self.current_cell_mask = ImageTk.PhotoImage(current_cell_mask_resized)
@@ -396,7 +409,6 @@ class App(tk.Frame):
         logarithmic_corrected = img_as_ubyte(logarithmic_corrected)
 
         pi = Image.fromarray(logarithmic_corrected)
-        (width, height) = (pi.width * 4, pi.height * 4)
         current_cell_image_resized = pi.resize((width, height))
 
         self.current_cell_image = ImageTk.PhotoImage(current_cell_image_resized)
@@ -442,10 +454,10 @@ class App(tk.Frame):
             "key_press_event", lambda event: print(f"you pressed {event.key}"))
         self.canvas_analysis.mpl_connect("key_press_event", key_press_handler)
 
-        self.button_quit = tk.Button(master=self.analysis_window, text="Quit", command=self.analysis_window.destroy)
+        self.button_quit = tk.Button(master=self.analysis_window, text="Quit", command=self.analysis_window.destroy, bg='#03a9f4', pady=20, padx=40)
 
         self.slider_update = tk.Scale(self.analysis_window, from_=0, to=len(data)-1, orient=tk.HORIZONTAL,
-                                    command=self.update_frequency, label="Frequency [Hz]")
+                                    command=self.update_frequency, label="Frame Number")
 
         # Packing order is important. Widgets are processed sequentially and if there
         # is no space left, because the window is too small, they are not displayed.
