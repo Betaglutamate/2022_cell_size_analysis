@@ -1,5 +1,6 @@
 import glob
 from skimage import io
+import os
 from pandas import read_csv
 
 class Viewer():
@@ -19,7 +20,8 @@ class Viewer():
         for dir in cell_analysis_dirs:
             cell_images = io.imread_collection(dir + '/*.png')
             cell_masks = io.imread_collection(dir + '/_labelled'+ '/*.png')
-            data = read_csv(dir + '/analysis' + '/zz_cell_analysis.csv')
+            cell_number = os.path.split(dir)[1]
+            data = read_csv(dir + '/analysis' + f'/{cell_number}_dataframe.csv')
             all_cell_images.append(cell_images)
             all_cell_masks.append(cell_masks)
             all_cell_data.append(data)
