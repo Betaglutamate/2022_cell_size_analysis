@@ -7,6 +7,7 @@ from skimage.restoration import denoise_nl_means, estimate_sigma
 import os
 import csv
 from pathlib import Path
+import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import ndimage
@@ -103,15 +104,21 @@ class Analysis():
             Path(os.path.normpath(os.path.join(path, "analysis"))).mkdir(
                 parents=True, exist_ok=True)
 
+            #get cell number name
+            cell_number = os.path.split(path)[1]
+
             # plot size over time
+
             fig, ax = plt.subplots()
             ax.scatter(x=time_list, y=area_list)
+            ax.set(ylim=[min(area_list)-20,max(area_list)+20])
             plt.savefig(os.path.normpath(os.path.join(
-                path, "analysis", "zz_cellplot.png")))
+                path, "analysis", f"{cell_number}_cellplot.png")))
+
 
             analysis_df = pd.DataFrame({"Time": time_list, "Area": area_list})
             analysis_df.to_csv(os.path.normpath(os.path.join(
-                path, "analysis", "zz_cell_analysis.csv")))
+                path, "analysis", f"{cell_number}_dataframe.csv")))
 
     def measure_properties(self, image):
         '''
@@ -119,10 +126,31 @@ class Analysis():
             image by applying otsu threshold then measuring
             regions
         '''
+
+        # test_im = sk.io.imread_collection('test_fluorescent/*.tif')
+        # n=100
+
+        # sk.io.imshow(test_im[0])
+
+        # duplicate = test_im[0].copy()
+
+        # duplicate[duplicate < 33315] = 0
+        # sk.io.imshow(duplicate)
+
+
         d_img = self.denoise_img(image)
         d_img = rescale_intensity(d_img)
-        thresh = threshold_otsu(d_img)
-        binary = d_img < thresh
+        
+
+        # thresh = threshold_otsu(d_img)
+        n= 10
+        thresh = np.mean(d_img[0:5, 0:5])
+        thresh = np.mean(d_img)
+        #thresh = np.partition(d_img[0], n-1)[n-1].max()
+
+
+
+        binary = d_img > thresh
         label_im = label(binary)
         clusters = regionprops(label_im, d_img)
 
@@ -147,6 +175,7 @@ class Analysis():
 
         labelled_img, labels = ndimage.label(new_img)
         labelled_img = label2rgb(labelled_img, bg_label=0)
+        labelled_img[0:5, 0:5, :] = [0,0,1]
 
         # save new image here
 

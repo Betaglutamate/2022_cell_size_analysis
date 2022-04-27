@@ -8,8 +8,10 @@ from tkinter import filedialog
 from skimage import exposure
 from analysis import Analysis
 from view_analysis import Viewer
+from gather_data import summarize_data
 from matplotlib.pyplot import imsave
 from skimage import io, img_as_ubyte
+from skimage.exposure import rescale_intensity
 from matplotlib.backends.backend_tkagg import (
             FigureCanvasTkAgg, NavigationToolbar2Tk)
 # Implement the default Matplotlib key bindings.
@@ -44,13 +46,15 @@ class App(tk.Frame):
         Path(self.coord_folder).mkdir(parents=True, exist_ok=True)
 
         sample_image = io.imread(self.loaded_image[0])
+        print(sample_image.min(), sample_image.max())
+        sample_image = rescale_intensity(sample_image)
         sample_image_path = os.path.normpath(
             os.path.join(self.coord_folder, "display_image.png"))
 
-        imsave(sample_image_path, arr=sample_image, cmap="Greys")
+        imsave(sample_image_path, arr=sample_image, cmap="viridis")
 
         self.my_images.append(tk.PhotoImage(file=(sample_image_path)))
-        self.current_size = self.image_size=sample_image[0].size
+        self.current_size = self.image_size = sample_image[0].size
         self.canvas.config(width=self.current_size, height=self.current_size)
         self.image_on_canvas = self.canvas.create_image(
             0, 0, anchor='nw', image=self.my_images[0])
@@ -233,6 +237,10 @@ class App(tk.Frame):
         analysis._load_images()
         analysis.create_subcells()
         analysis.calculate_cell_area()
+
+        #run here
+
+        summarize_data(self.root)
     
     def select_cell_button_logic(self, direction):
         all_coords = []
