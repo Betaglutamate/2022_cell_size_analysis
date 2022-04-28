@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import ndimage
 import pandas as pd
+from sympy import N
 
 
 class Analysis():
@@ -127,25 +128,23 @@ class Analysis():
             regions
         '''
 
-        # test_im = sk.io.imread_collection('test_fluorescent/*.tif')
-        # n=100
-
-        # sk.io.imshow(test_im[0])
-
-        # duplicate = test_im[0].copy()
-
-        # duplicate[duplicate < 33315] = 0
-        # sk.io.imshow(duplicate)
-
-
-        d_img = self.denoise_img(image)
+        cutoff = 0.8 # choose what percent of pixel intensities you want to cut off
+        d_img = image
         d_img = rescale_intensity(d_img)
         
+        # subtratc background from image then choose the 20% brightest pixels and define those as cell
+        #thresh = threshold_otsu(d_img)
+        #n= 10
+        background_intensity = np.mean(d_img[0:5, 0:5])
+        img_free = d_img-background_intensity
+        ravel_image = np.sort(img_free.ravel())
+        length_image = len(img_free.ravel())
+        thresh = ravel_image[int(np.ceil(cutoff*length_image))]
 
-        # thresh = threshold_otsu(d_img)
-        n= 10
-        thresh = np.mean(d_img[0:5, 0:5])
-        thresh = np.mean(d_img)
+# an array of length N
+# 30%
+
+
         #thresh = np.partition(d_img[0], n-1)[n-1].max()
 
 
