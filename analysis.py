@@ -93,6 +93,9 @@ class Analysis():
             time_list = []
             area_list = []
 
+            #Try calculating threshold based on first image only
+            
+
             for num, image in enumerate(cell_collection):
                 area, label_image = self.measure_properties(image)
                 time_list.append(num)
@@ -128,30 +131,21 @@ class Analysis():
             regions
         '''
 
-        cutoff = 0.8 # choose what percent of pixel intensities you want to cut off
-        d_img = image
-        d_img = rescale_intensity(d_img)
-        
-        # subtratc background from image then choose the 20% brightest pixels and define those as cell
-        #thresh = threshold_otsu(d_img)
-        #n= 10
-        background_intensity = np.mean(d_img[0:5, 0:5])
-        img_free = d_img-background_intensity
-        ravel_image = np.sort(img_free.ravel())
-        length_image = len(img_free.ravel())
-        thresh = ravel_image[int(np.ceil(cutoff*length_image))]
+#         cutoff = 0.90 # choose what percent of pixel intensities you want to cut off
+#         d_img = image
+#         # subtratc background from image then choose the 20% brightest pixels and define those as cell
+#         #n= 10
+        background_intensity = np.mean(image[0:5, 0:5])
+        img_free = image-background_intensity
+#         ravel_image = np.sort(img_free.ravel())
 
-# an array of length N
-# 30%
+#         #thresh = np.partition(d_img[0], n-1)[n-1].max()
+        thresh = threshold_otsu(img_free)
 
 
-        #thresh = np.partition(d_img[0], n-1)[n-1].max()
-
-
-
-        binary = d_img > thresh
+        binary = img_free > thresh
         label_im = label(binary)
-        clusters = regionprops(label_im, d_img)
+        clusters = regionprops(label_im, img_free)
 
         filtered_list = []
         max_area_list = []
@@ -166,7 +160,7 @@ class Analysis():
         for obj in filtered_list:
             obj_coords.append(obj.coords)
 
-        new_img = np.zeros(d_img.shape)
+        new_img = np.zeros(img_free.shape)
 
         for pos in obj_coords[probably_cell]:
             x, y = pos[0], pos[1]

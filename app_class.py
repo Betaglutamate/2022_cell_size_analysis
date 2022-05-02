@@ -1,6 +1,7 @@
 from math import ceil, floor
 import tkinter as tk
 import os
+import numpy as np
 import csv
 from PIL import Image, ImageTk
 from pathlib import Path
@@ -46,12 +47,18 @@ class App(tk.Frame):
         Path(self.coord_folder).mkdir(parents=True, exist_ok=True)
 
         sample_image = io.imread(self.loaded_image[0])
-        print(sample_image.min(), sample_image.max())
-        sample_image = rescale_intensity(sample_image)
+        
+
+        ravel_image = np.sort(sample_image.ravel())
+        cut_image = ravel_image[int((len(sample_image)*0.3)):-int((len(sample_image)*0.3))]
+        
+        min_img, max_img = (cut_image.min(), cut_image.max())
+        print(min_img, max_img)
+        sample_image = rescale_intensity(sample_image, (min_img, max_img))
         sample_image_path = os.path.normpath(
             os.path.join(self.coord_folder, "display_image.png"))
 
-        imsave(sample_image_path, arr=sample_image, cmap="viridis")
+        imsave(sample_image_path, arr=sample_image, cmap="magma")
 
         self.my_images.append(tk.PhotoImage(file=(sample_image_path)))
         self.current_size = self.image_size = sample_image[0].size
