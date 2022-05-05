@@ -44,10 +44,11 @@ class App(tk.Frame):
         self._create_buttons()
         self._open_image_folder()
         self._initialize_image()
+        self.finalize_canvas()
+
 
     def _initialize_image(self):
         self.loaded_image = []
-        self.my_images = []
 
         for root, dirs, files in os.walk(self.directory, topdown=False):
             self.root = root
@@ -65,45 +66,64 @@ class App(tk.Frame):
 
         ravel_image = np.sort(sample_image.ravel())
         cut_image = ravel_image[int((len(sample_image)*0.3)):-int((len(sample_image)*0.3))]
-        
         min_img, max_img = (cut_image.min(), cut_image.max())
-        sample_image = rescale_intensity(sample_image, (min_img, max_img))
-        sample_image_path = os.path.normpath(
+        self.sample_image = rescale_intensity(sample_image, (min_img, max_img))
+        self.sample_image_path = os.path.normpath(
             os.path.join(self.coord_folder, "display_image.png"))
 
-        imsave(sample_image_path, arr=sample_image, cmap="magma")
+        imsave(self.sample_image_path, arr=self.sample_image, cmap="magma")
 
         # path = 'bacteria-icon.png'  # place path to your image here
         
-        self.image = Image.open(sample_image_path)  # open image
+    def finalize_canvas(self):
+
+        self.image = Image.open(self.sample_image_path)  # open image
         self.width, self.height = self.image.size
         self.container = self.canvas.create_rectangle(0, 0, self.width, self.height, width=0)
 
-      
+
+        
         self.canvas.bind('<Configure>', self.show_image)  # canvas is resized
         self.canvas.bind("<Button-1>", self.startRect)
         self.canvas.bind("<ButtonRelease-1>", self.stopRect)
         self.canvas.bind("<B1-Motion>", self.movingRect)
-        
-        self.canvas.bind("<Button-3>", self.reset_image)
-
+        self.canvas.bind('<ButtonPress-3>', self.move_from)
+        self.canvas.bind('<B3-Motion>',     self.move_to)
+        self.canvas.bind("<Button-2>", self.reset_image)
         self.canvas.bind('<MouseWheel>', self.wheel)  # with Windows and MacOS, but not Linux
         self.canvas.bind('<Button-5>',   self.wheel)  # only with Linux, wheel scroll down
         self.canvas.bind('<Button-4>',   self.wheel)  # only with Linux, wheel scroll up
-        
-
+    
 
         self.imscale = 1.0  # scale for the canvaas image
         self.delta = 1.3  # zoom magnitude
         # Put image into container rectangle and use it to set proper coordinates to the image
 
-        self.my_images.append(tk.PhotoImage(file=(sample_image_path)))
-        self.current_size = self.image_size = sample_image[0].size
-
+        self.current_size = self.image_size = self.sample_image[0].size
         self.canvas.config(width=self.current_size, height=self.current_size)
-        # self.image_on_canvas = self.canvas.create_image(
-        # 0, 0, anchor='nw', image=self.my_images[0])
-    
+
+        # 
+        # 
+    def get_roi(self, second):
+        """ Obtain roi image rectangle and output in the console
+            upper left and bottom right corners of the rectangle """
+        if self.rectid:
+            bbox1 = self.canvas.coords(self.container)  # get image area
+            bbox2 = self.canvas.coords(self.rectid)  # get roi area
+            x1 = int((bbox2[0] - bbox1[0]) / self.total_zoom)  # get upper left corner (x1,y1)
+            y1 = int((bbox2[1] - bbox1[1]) / self.total_zoom)
+
+            # you need to find the width and height to get x2 and y2
+            bounds= self.canvas.bbox(self.rectid)
+            width= bounds[2]-bounds[0]
+            height= bounds[3]- bounds[1]
+            print(f'width = {width}')
+            print(f'height = {height}')
+            x2 = x1 + width/self.total_zoom,  # get bottom right corner (x2,y2)
+            y2 = y1 + height/self.total_zoom
+            print('({x1}, {y1})\t({x2}, {y2})'.format(x1=x1, y1=y1, x2=x2, y2=y2))
+            return x1, y1, x2, y2
+
     def move_from(self, event):
         ''' Remember previous coordinates for scrolling with the mouse '''
         self.canvas.scan_mark(event.x, event.y)
@@ -112,9 +132,6 @@ class App(tk.Frame):
         ''' Drag (move) canvas to the new position '''
         self.canvas.scan_dragto(event.x, event.y, gain=1)
         self.show_image()  # redraw the image
-    
-    
-
 
     def _createVariables(self, parent):
         self.parent = parent
@@ -134,12 +151,11 @@ class App(tk.Frame):
 
     def reset_image(self, event):
         print("activated")
-        image = self.image
-        imagetk = ImageTk.PhotoImage(image)
-        imageid = self.canvas.create_image((0,0), anchor='nw', image=imagetk)
-        self.canvas.lower(imageid)  # set image into background
-        self.canvas.imagetk = imagetk  # keep an extra reference to prevent garbage-collection
-
+        self.total_zoom=1
+        self.canvas.destroy()
+        self._createCanvas()
+        self.finalize_canvas()
+        self.display_coords()
 
     def show_image(self, event=None):
         ''' Show image on the Canvas '''
@@ -151,10 +167,6 @@ class App(tk.Frame):
                  self.canvas.canvasy(0),
                  self.canvas.canvasx(self.canvas.winfo_width()),
                  self.canvas.canvasy(self.canvas.winfo_height()))
-
-        self.offset_x= bbox2[0]
-        self.offset_y= bbox2[1]
-
 
         bbox = [min(bbox1[0], bbox2[0]), min(bbox1[1], bbox2[1]),  # get scroll region box
                 max(bbox1[2], bbox2[2]), max(bbox1[3], bbox2[3])]
@@ -186,7 +198,6 @@ class App(tk.Frame):
         y = self.canvas.canvasy(event.y)
         bbox = self.canvas.bbox(self.container)  # get image area
 
-
         if bbox[0] < x < bbox[2] and bbox[1] < y < bbox[3]: pass  # Ok! Inside the image
         else: return  # zoom only inside image area
         scale = 1.0
@@ -204,23 +215,6 @@ class App(tk.Frame):
         self.canvas.scale('all', x, y, scale, scale)  # rescale all canvas objects
 
         self.total_zoom = self.total_zoom * scale
-
-
-
-        # first shrink canvas to size so divide by self.total_zoom
-
-
-        # bbox=x1, y1, x2, y2
-
-        # then to get the actual coordinates set x1, y1 at 0
-
-        # then you can offset the stuff
-
-        # took correct coordinates first multiply them by total zoom then offset by x and y 
-
-        #first  bbox divide by zoom factor then move coordinates to x0 and y0 on bbox
-        
-
         self.show_image()
 
 
@@ -246,7 +240,6 @@ class App(tk.Frame):
         self.display_coords_button = tk.Button(
             self.parent, text="display coords", width=20, pady=20, command=self.display_coords)
         self.display_coords_button.grid(row=3, column=2)
-
 
         self.exit_button = tk.Button(
             self.parent, text="Exit", width=20, pady=20, command=self.quit)
@@ -286,16 +279,10 @@ class App(tk.Frame):
             self.rectx0, self.recty0, self.rectx0, self.recty0, outline="#4eccde")
 
 
-
     def movingRect(self, event):
         # Translate mouse screen x1,y1 coordinates to canvas coordinates
         self.rectx1 = self.canvas.canvasx(event.x)
         self.recty1 = self.canvas.canvasy(event.y)
-        self.correct_rectx1 = self.rectx1 + self.offset_x
-        self.correct_recty1 = self.rectx1 + self.offset_y
-
-
-        print(self.correct_rectx1)
 
         # Modify rectangle x1, y1 coordinates
         self.canvas.coords(self.rectid, self.rectx0, self.recty0,
@@ -316,12 +303,27 @@ class App(tk.Frame):
     def save_coords(self):
         self.coord_file = os.path.join(self.coord_folder, 'coordinates.csv')
 
+        if self.rectid:
+            bbox1 = self.canvas.coords(self.container)  # get image area
+            bbox2 = self.canvas.coords(self.rectid)  # get roi area
+            x1 = int((bbox2[0] - bbox1[0]) / self.total_zoom)  # get upper left corner (x1,y1)
+            y1 = int((bbox2[1] - bbox1[1]) / self.total_zoom)
+
+            # you need to find the width and height to get x2 and y2
+            bounds= self.canvas.bbox(self.rectid)
+            width= bounds[2]-bounds[0]
+            height= bounds[3]- bounds[1]
+            print(f'width = {width}')
+            print(f'height = {height}')
+            x2 = int(x1 + width/self.total_zoom)  # get bottom right corner (x2,y2)
+            y2 = int(y1 + height/self.total_zoom)
+            print(x1, y1, x2, y2)
+
         with open(self.coord_file, 'a+', newline='', encoding='UTF8') as f:
             writer = csv.writer(f)
-            current_row = [os.path.split(self.directory)[-1], self.rectid, self.rectx0, self.recty0,
-                      self.rectx1, self.recty1] 
+            current_row = [os.path.split(self.directory)[-1], self.rectid, x1, y1,
+                      x2, y2] 
             writer.writerow(current_row)
-
 
         ## check for duplicates
         with open(self.coord_file, newline='', encoding='UTF8') as f:
@@ -337,9 +339,12 @@ class App(tk.Frame):
         if self.coords_shown:
             self.hide_coords()
             self.display_coords()
+        
+        self.reset_image(event=None)
 
 
     def display_coords(self):
+
         self.coords_shown = True
 
         self.all_shown_rect = []

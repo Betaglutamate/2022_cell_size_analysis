@@ -46,6 +46,7 @@ class Zoom_Advanced(ttk.Frame):
         self.master.columnconfigure(0, weight=1)
         # Bind events to the Canvas
         self.canvas.bind('<Configure>', self.show_image)  # canvas is resized
+        self.canvas.bind('<Configure>', self.show_image)  # canvas is resized
         self.canvas.bind('<ButtonPress-1>', self.move_from)
         self.canvas.bind('<B1-Motion>',     self.move_to)
         self.canvas.bind('<MouseWheel>', self.wheel)  # with Windows and MacOS, but not Linux
