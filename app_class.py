@@ -19,48 +19,63 @@ from matplotlib.backends.backend_tkagg import (
 # Implement the default Matplotlib key bindings.
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
-
-class AutoScrollbar(tk.Scrollbar):
-    ''' A scrollbar that hides itself if it's not needed.
-        Works only if you use the grid geometry manager '''
-    def set(self, lo, hi):
-        if float(lo) <= 0.0 and float(hi) >= 1.0:
-            self.grid_remove()
-        else:
-            self.grid()
-            tk.Scrollbar.set(self, lo, hi)
-
-    def pack(self, **kw):
-        raise tk.TclError('Cannot use pack with this widget')
-
-    def place(self, **kw):
-        raise tk.TclError('Cannot use place with this widget')
+import threading
 
 
 class App(tk.Frame):
     def __init__(self, parent):
         tk.Frame.__init__(self, parent)
         self._createVariables(parent)
+        self._open_image_folder()
+        self._get_image_paths()
         self._createCanvas()
         self._create_buttons()
-        self._open_image_folder()
         self._initialize_image()
-        self.finalize_canvas()
+        self.finalize_canvas(sample_image_path=self.sample_image_path)
+        t = threading.Thread(target=self.background_task)
+        t.start()
+        
 
+    def background_task(self):
+        self._generate_heatmaps()
 
-    def _initialize_image(self):
+    def _get_image_paths(self):
         all_image_paths = []
 
         for root, dirs, file in os.walk(self.directory):
             all_image_paths.extend(file)
             break
-        self.root = root        
+        self.root = root
+        print(self.root)        
         #make sure that the image paths are in correct time order
         all_image_paths.sort()
         self.all_filter_image_paths = []
         for image_path in all_image_paths:
             if 'tif' in image_path:
                 self.all_filter_image_paths.append(image_path)
+                
+        # make coord folder to save coord and display img
+    def _generate_heatmaps(self):
+        self.heatmap_folder = os.path.normpath(os.path.join(self.root, "heatmap"))
+        Path(self.heatmap_folder).mkdir(parents=True, exist_ok=True)
+
+        for file in self.all_filter_image_paths:
+            self.rescale_images(os.path.join(file))
+
+    def rescale_images(self, filename):
+        if not os.path.exists(os.path.join(self.root, filename)):
+            current_image = io.imread(os.path.join(self.root, filename))
+            ravel_image = np.sort(current_image.ravel())
+            cut_image = ravel_image[int((len(current_image)*0.3)):-int((len(current_image)*0.3))]
+            min_img, max_img = (cut_image.min(), cut_image.max())
+            sample_image = rescale_intensity(current_image, (min_img, max_img))
+            save_file_path = os.path.normpath(
+                os.path.join(self.heatmap_folder, f'{filename.split(".")[0]}.png'))
+
+            imsave(save_file_path, arr=sample_image, cmap="magma")
+
+
+    def _initialize_image(self):
         # make coord folder to save coord and display img
         self.coord_folder = os.path.normpath(os.path.join(self.root, "coords"))
         Path(self.coord_folder).mkdir(parents=True, exist_ok=True)
@@ -77,9 +92,10 @@ class App(tk.Frame):
 
         # path = 'bacteria-icon.png'  # place path to your image here
         
-    def finalize_canvas(self):
+    def finalize_canvas(self, sample_image_path):
 
-        self.image = Image.open(self.sample_image_path)  # open image
+        self.image = Image.open(sample_image_path)  # open image
+        print(sample_image_path)
         self.width, self.height = self.image.size
         self.container = self.canvas.create_rectangle(0, 0, self.width, self.height, width=0)
 
@@ -102,27 +118,6 @@ class App(tk.Frame):
         self.current_size = self.image.size
         self.canvas.config(width=self.width, height=self.height)
 
-        # 
-        # 
-    # def get_roi(self, second):
-    #     """ Obtain roi image rectangle and output in the console
-    #         upper left and bottom right corners of the rectangle """
-    #     if self.rectid:
-    #         bbox1 = self.canvas.coords(self.container)  # get image area
-    #         bbox2 = self.canvas.coords(self.rectid)  # get roi area
-    #         x1 = int((bbox2[0] - bbox1[0]) / self.total_zoom)  # get upper left corner (x1,y1)
-    #         y1 = int((bbox2[1] - bbox1[1]) / self.total_zoom)
-
-    #         # you need to find the width and height to get x2 and y2
-    #         bounds= self.canvas.bbox(self.rectid)
-    #         width= bounds[2]-bounds[0]
-    #         height= bounds[3]- bounds[1]
-    #         print(f'width = {width}')
-    #         print(f'height = {height}')
-    #         x2 = x1 + width/self.total_zoom,  # get bottom right corner (x2,y2)
-    #         y2 = y1 + height/self.total_zoom
-    #         print('({x1}, {y1})\t({x2}, {y2})'.format(x1=x1, y1=y1, x2=x2, y2=y2))
-    #         return x1, y1, x2, y2
 
     def move_from(self, event):
         ''' Remember previous coordinates for scrolling with the mouse '''
@@ -144,6 +139,7 @@ class App(tk.Frame):
         self.current_row_index = 0
         self.current_coord_selected = None
         self.current_analysis_image_label = None
+        self.counter = 0
 
         self.total_zoom = 1
 
@@ -154,7 +150,7 @@ class App(tk.Frame):
         self.total_zoom=1
         self.canvas.destroy()
         self._createCanvas()
-        self.finalize_canvas()
+        self.finalize_canvas(sample_image_path=self.sample_image_path)
         self.display_coords()
 
     def show_image(self, event=None):
@@ -220,7 +216,6 @@ class App(tk.Frame):
 
     def _open_image_folder(self):
         self.directory = filedialog.askdirectory()
-        self._initialize_image()
 
     def _createCanvas(self):
         self.canvas = tk.Canvas(self.parent, width=520, height=520, bg='white')
@@ -270,14 +265,18 @@ class App(tk.Frame):
         self.select_coord_backward.grid(row=1, column=7)
 
          ## picture slider
-        self.image_slider = tk.Scale(self.parent, from_=0, to=200, orient=tk.HORIZONTAL, command=self.switch_image)
+
+        self.image_slider = tk.Scale(self.parent, from_=0, to=len(self.all_filter_image_paths)-1, orient=tk.HORIZONTAL, command=self.switch_image)
         self.image_slider.grid(row=5, column=1)
 
 
     def switch_image(self, slider_value):
-        self.image_collection
-        
-        print(slider_value)
+        png_file_paths = [x.replace("tif", "png") for x in self.all_filter_image_paths]
+        self.all_filter_image_paths[int(slider_value)]
+        loaded_image_name = os.path.join(self.heatmap_folder, png_file_paths[int(slider_value)])
+        print(loaded_image_name)
+        self.finalize_canvas(loaded_image_name)
+        self.show_image()
 
     ## I need to load all the images
 
@@ -310,7 +309,6 @@ class App(tk.Frame):
         self.canvas.coords(self.rectid, self.rectx0, self.recty0,
                            self.rectx1, self.recty1)
         
-
 
     def save_coords(self):
         self.coord_file = os.path.join(self.coord_folder, 'coordinates.csv')
