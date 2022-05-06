@@ -49,25 +49,31 @@ class App(tk.Frame):
 
 
     def _initialize_image(self):
-        self.loaded_image = []
-        for root, dirs, files in os.walk(self.directory, topdown=False):
-            self.root = root
+        all_image_paths = []
 
+        for root, dirs, file in os.walk(self.directory):
+            all_image_paths.extend(file)
+            break
+        self.root = root        
+        #make sure that the image paths are in correct time order
+        all_image_paths.sort()
+        self.all_filter_image_paths = []
+        for image_path in all_image_paths:
+            if 'tif' in image_path:
+                self.all_filter_image_paths.append(image_path)
         # make coord folder to save coord and display img
         self.coord_folder = os.path.normpath(os.path.join(self.root, "coords"))
         Path(self.coord_folder).mkdir(parents=True, exist_ok=True)
 
-        sample_image = io.imread_collection(f'{root}/*.tif')[0]
-        self.loaded_image = sample_image
-
-        ravel_image = np.sort(sample_image.ravel())
-        cut_image = ravel_image[int((len(sample_image)*0.3)):-int((len(sample_image)*0.3))]
+        self.loaded_image = io.imread(os.path.join(self.root,  self.all_filter_image_paths[0]))
+        ravel_image = np.sort(self.loaded_image.ravel())
+        cut_image = ravel_image[int((len(self.loaded_image)*0.3)):-int((len(self.loaded_image)*0.3))]
         min_img, max_img = (cut_image.min(), cut_image.max())
-        self.sample_image = rescale_intensity(sample_image, (min_img, max_img))
+        sample_image = rescale_intensity(self.loaded_image, (min_img, max_img))
         self.sample_image_path = os.path.normpath(
             os.path.join(self.coord_folder, "display_image.png"))
 
-        imsave(self.sample_image_path, arr=self.sample_image, cmap="magma")
+        imsave(self.sample_image_path, arr=sample_image, cmap="magma")
 
         # path = 'bacteria-icon.png'  # place path to your image here
         
@@ -77,8 +83,6 @@ class App(tk.Frame):
         self.width, self.height = self.image.size
         self.container = self.canvas.create_rectangle(0, 0, self.width, self.height, width=0)
 
-
-        
         self.canvas.bind('<Configure>', self.show_image)  # canvas is resized
         self.canvas.bind("<Button-1>", self.startRect)
         self.canvas.bind("<ButtonRelease-1>", self.stopRect)
@@ -95,30 +99,30 @@ class App(tk.Frame):
         self.delta = 1.3  # zoom magnitude
         # Put image into container rectangle and use it to set proper coordinates to the image
 
-        self.current_size = self.image_size = self.sample_image[0].size
-        self.canvas.config(width=self.current_size, height=self.current_size)
+        self.current_size = self.image.size
+        self.canvas.config(width=self.width, height=self.height)
 
         # 
         # 
-    def get_roi(self, second):
-        """ Obtain roi image rectangle and output in the console
-            upper left and bottom right corners of the rectangle """
-        if self.rectid:
-            bbox1 = self.canvas.coords(self.container)  # get image area
-            bbox2 = self.canvas.coords(self.rectid)  # get roi area
-            x1 = int((bbox2[0] - bbox1[0]) / self.total_zoom)  # get upper left corner (x1,y1)
-            y1 = int((bbox2[1] - bbox1[1]) / self.total_zoom)
+    # def get_roi(self, second):
+    #     """ Obtain roi image rectangle and output in the console
+    #         upper left and bottom right corners of the rectangle """
+    #     if self.rectid:
+    #         bbox1 = self.canvas.coords(self.container)  # get image area
+    #         bbox2 = self.canvas.coords(self.rectid)  # get roi area
+    #         x1 = int((bbox2[0] - bbox1[0]) / self.total_zoom)  # get upper left corner (x1,y1)
+    #         y1 = int((bbox2[1] - bbox1[1]) / self.total_zoom)
 
-            # you need to find the width and height to get x2 and y2
-            bounds= self.canvas.bbox(self.rectid)
-            width= bounds[2]-bounds[0]
-            height= bounds[3]- bounds[1]
-            print(f'width = {width}')
-            print(f'height = {height}')
-            x2 = x1 + width/self.total_zoom,  # get bottom right corner (x2,y2)
-            y2 = y1 + height/self.total_zoom
-            print('({x1}, {y1})\t({x2}, {y2})'.format(x1=x1, y1=y1, x2=x2, y2=y2))
-            return x1, y1, x2, y2
+    #         # you need to find the width and height to get x2 and y2
+    #         bounds= self.canvas.bbox(self.rectid)
+    #         width= bounds[2]-bounds[0]
+    #         height= bounds[3]- bounds[1]
+    #         print(f'width = {width}')
+    #         print(f'height = {height}')
+    #         x2 = x1 + width/self.total_zoom,  # get bottom right corner (x2,y2)
+    #         y2 = y1 + height/self.total_zoom
+    #         print('({x1}, {y1})\t({x2}, {y2})'.format(x1=x1, y1=y1, x2=x2, y2=y2))
+    #         return x1, y1, x2, y2
 
     def move_from(self, event):
         ''' Remember previous coordinates for scrolling with the mouse '''
@@ -265,6 +269,18 @@ class App(tk.Frame):
             self.parent, bg="#882244", text="select previous coord", width=20, pady=20, command=lambda: self.select_coord('backward'))
         self.select_coord_backward.grid(row=1, column=7)
 
+         ## picture slider
+        self.image_slider = tk.Scale(self.parent, from_=0, to=200, orient=tk.HORIZONTAL, command=self.switch_image)
+        self.image_slider.grid(row=5, column=1)
+
+
+    def switch_image(self, slider_value):
+        self.image_collection
+        
+        print(slider_value)
+
+    ## I need to load all the images
+
     def startRect(self, event):
         # Translate mouse screen x0,y0 coordinates to canvas coordinates
         self.canvas.delete(self.rectid)
@@ -340,6 +356,9 @@ class App(tk.Frame):
 
 
     def display_coords(self):
+
+        if self.total_zoom != 1:
+            self.reset_image(event=None)
 
         self.coords_shown = True
 
@@ -430,6 +449,8 @@ class App(tk.Frame):
 
         if self.current_coord_selected is not None:
             self.canvas.delete(self.current_coord_selected)
+        
+        self.reset_image(event=None)
 
         self.current_coord_selected = self.canvas.create_rectangle(
             current_row[2], current_row[3], current_row[4], current_row[5], outline="#ff0000",  width=2)
