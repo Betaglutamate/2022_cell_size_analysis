@@ -1,8 +1,5 @@
 import os
-import skimage as sk
-import matplotlib as plt
 import pandas as pd
-
 
 def summarize_data(directory):
 
@@ -13,7 +10,7 @@ def summarize_data(directory):
         for file in files:
             if 'dataframe.csv' in file:
                 temp_df = pd.read_csv(os.path.join(root, file))
-                
+
                 cell_number = file.split('_')[1]
                 temp_df['cell_number'] = f"cell_{cell_number}"
                 complete_df.append(temp_df)

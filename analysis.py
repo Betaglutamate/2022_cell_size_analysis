@@ -19,9 +19,6 @@ class Analysis():
     def __init__(self, path, coord_folder, **kwargs):
         self.path = path
         self.coord_folder = coord_folder
-        # self._load_images()
-        # self.create_subcells()
-        # self.calculate_cell_area()
         self.single_image = kwargs.get('single_cell')
 
     def _load_images(self):
@@ -93,8 +90,7 @@ class Analysis():
             time_list = []
             area_list = []
 
-            #Try calculating threshold based on first image only
-            
+            # Try calculating threshold based on first image only
 
             for num, image in enumerate(cell_collection):
                 area, label_image = self.measure_properties(image)
@@ -108,14 +104,14 @@ class Analysis():
             Path(os.path.normpath(os.path.join(path, "analysis"))).mkdir(
                 parents=True, exist_ok=True)
 
-            #get cell number name
+            # get cell number name
             cell_number = os.path.split(path)[1]
 
             # plot size over time
 
             fig, ax = plt.subplots()
             ax.scatter(x=time_list, y=area_list)
-            ax.set(ylim=[min(area_list)-20,max(area_list)+20])
+            ax.set(ylim=[min(area_list)-20, max(area_list)+20])
             plt.savefig(os.path.normpath(os.path.join(
                 path, "analysis", f"{cell_number}_cellplot.png")))
 
@@ -142,9 +138,22 @@ class Analysis():
 #         #thresh = np.partition(d_img[0], n-1)[n-1].max()
         thresh = threshold_otsu(img_free)
 
+        import cv2
+        image = np.uint8(image)
+        _,thresh = cv2.threshold(image, np.mean(image), 255, cv2.THRESH_BINARY_INV)
+        thresh = np.uint8(thresh)
+        edges = cv2.dilate(cv2.Canny(thresh,0,255),None)
 
+        cnt = sorted(cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)[-2], key=cv2.contourArea)[-1]
+        mask = np.zeros(img_free.shape, np.uint8)
+        masked = cv2.drawContours(mask, [cnt],-1, 255, -1)
+
+        # dst = cv2.bitwise_and(image, image, mask=mask)
+        # segmented = cv2.cvtColor(dst, cv2.COLOR_BGR2GRAY)
+
+        segmented = masked/255
         binary = img_free > thresh
-        label_im = label(binary)
+        label_im = label(segmented)
         clusters = regionprops(label_im, img_free)
 
         filtered_list = []
@@ -168,7 +177,7 @@ class Analysis():
 
         labelled_img, labels = ndimage.label(new_img)
         labelled_img = label2rgb(labelled_img, bg_label=0)
-        labelled_img[0:5, 0:5, :] = [0,0,1]
+        labelled_img[0:5, 0:5, :] = [0, 0, 1]
 
         # save new image here
 
@@ -185,6 +194,6 @@ class Analysis():
 
         # slow algorithm
         denoise = denoise_nl_means(img, h=1.15 * sigma_est, fast_mode=True,
-                                                   **patch_kw)
+                                   **patch_kw)
 
         return denoise

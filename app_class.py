@@ -15,7 +15,7 @@ from skimage import io, img_as_ubyte
 from skimage.exposure import rescale_intensity
 from skimage.transform import rescale
 from matplotlib.backends.backend_tkagg import (
-            FigureCanvasTkAgg, NavigationToolbar2Tk)
+    FigureCanvasTkAgg, NavigationToolbar2Tk)
 # Implement the default Matplotlib key bindings.
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
@@ -34,7 +34,6 @@ class App(tk.Frame):
         self.finalize_canvas(sample_image_path=self.sample_image_path)
         t = threading.Thread(target=self.background_task)
         t.start()
-        
 
     def background_task(self):
         self._generate_heatmaps()
@@ -46,43 +45,50 @@ class App(tk.Frame):
             all_image_paths.extend(file)
             break
         self.root = root
-        print(self.root)        
-        #make sure that the image paths are in correct time order
+        print(self.root)
+        # make sure that the image paths are in correct time order
         all_image_paths.sort()
         self.all_filter_image_paths = []
         for image_path in all_image_paths:
             if 'tif' in image_path:
                 self.all_filter_image_paths.append(image_path)
-                
+
         # make coord folder to save coord and display img
     def _generate_heatmaps(self):
-        self.heatmap_folder = os.path.normpath(os.path.join(self.root, "heatmap"))
+        self.heatmap_folder = os.path.normpath(
+            os.path.join(self.root, "heatmap"))
         Path(self.heatmap_folder).mkdir(parents=True, exist_ok=True)
 
+        i = 0
         for file in self.all_filter_image_paths:
+            i = i+1
             self.rescale_images(os.path.join(file))
+            print(
+                f'converting image {i} out of {len(self.all_filter_image_paths)}')
 
     def rescale_images(self, filename):
-        if not os.path.exists(os.path.join(self.root, filename)):
+        if not os.path.exists(os.path.join(self.heatmap_folder, f'{filename.split(".")[0]}.png')):
             current_image = io.imread(os.path.join(self.root, filename))
             ravel_image = np.sort(current_image.ravel())
-            cut_image = ravel_image[int((len(current_image)*0.3)):-int((len(current_image)*0.3))]
+            cut_image = ravel_image[int(
+                (len(current_image)*0.3)):-int((len(current_image)*0.3))]
             min_img, max_img = (cut_image.min(), cut_image.max())
-            sample_image = rescale_intensity(current_image, (min_img, max_img))
+            sample_image = rescale_intensity(current_image, in_range='image', out_range=(0,1))
             save_file_path = os.path.normpath(
                 os.path.join(self.heatmap_folder, f'{filename.split(".")[0]}.png'))
 
             imsave(save_file_path, arr=sample_image, cmap="magma")
-
 
     def _initialize_image(self):
         # make coord folder to save coord and display img
         self.coord_folder = os.path.normpath(os.path.join(self.root, "coords"))
         Path(self.coord_folder).mkdir(parents=True, exist_ok=True)
 
-        self.loaded_image = io.imread(os.path.join(self.root,  self.all_filter_image_paths[0]))
+        self.loaded_image = io.imread(os.path.join(
+            self.root, self.all_filter_image_paths[0]))
         ravel_image = np.sort(self.loaded_image.ravel())
-        cut_image = ravel_image[int((len(self.loaded_image)*0.3)):-int((len(self.loaded_image)*0.3))]
+        cut_image = ravel_image[int(
+            (len(self.loaded_image)*0.3)):-int((len(self.loaded_image)*0.3))]
         min_img, max_img = (cut_image.min(), cut_image.max())
         sample_image = rescale_intensity(self.loaded_image, (min_img, max_img))
         self.sample_image_path = os.path.normpath(
@@ -91,13 +97,14 @@ class App(tk.Frame):
         imsave(self.sample_image_path, arr=sample_image, cmap="magma")
 
         # path = 'bacteria-icon.png'  # place path to your image here
-        
+
     def finalize_canvas(self, sample_image_path):
 
         self.image = Image.open(sample_image_path)  # open image
         print(sample_image_path)
         self.width, self.height = self.image.size
-        self.container = self.canvas.create_rectangle(0, 0, self.width, self.height, width=0)
+        self.container = self.canvas.create_rectangle(
+            0, 0, self.width, self.height, width=0)
 
         self.canvas.bind('<Configure>', self.show_image)  # canvas is resized
         self.canvas.bind("<Button-1>", self.startRect)
@@ -106,10 +113,12 @@ class App(tk.Frame):
         self.canvas.bind('<ButtonPress-3>', self.move_from)
         self.canvas.bind('<B3-Motion>',     self.move_to)
         self.canvas.bind("<Button-2>", self.reset_image)
-        self.canvas.bind('<MouseWheel>', self.wheel)  # with Windows and MacOS, but not Linux
-        self.canvas.bind('<Button-5>',   self.wheel)  # only with Linux, wheel scroll down
-        self.canvas.bind('<Button-4>',   self.wheel)  # only with Linux, wheel scroll up
-    
+        # with Windows and MacOS, but not Linux
+        self.canvas.bind('<MouseWheel>', self.wheel)
+        # only with Linux, wheel scroll down
+        self.canvas.bind('<Button-5>',   self.wheel)
+        # only with Linux, wheel scroll up
+        self.canvas.bind('<Button-4>',   self.wheel)
 
         self.imscale = 1.0  # scale for the canvaas image
         self.delta = 1.3  # zoom magnitude
@@ -117,7 +126,6 @@ class App(tk.Frame):
 
         self.current_size = self.image.size
         self.canvas.config(width=self.width, height=self.height)
-
 
     def move_from(self, event):
         ''' Remember previous coordinates for scrolling with the mouse '''
@@ -143,11 +151,11 @@ class App(tk.Frame):
 
         self.total_zoom = 1
 
-    ##added stuff
+    # added stuff
 
     def reset_image(self, event):
         print("activated")
-        self.total_zoom=1
+        self.total_zoom = 1
         self.canvas.destroy()
         self._createCanvas()
         self.finalize_canvas(sample_image_path=self.sample_image_path)
@@ -156,7 +164,7 @@ class App(tk.Frame):
     def show_image(self, event=None):
         ''' Show image on the Canvas '''
         bbox1 = self.canvas.bbox(self.container)  # get image area
-        
+
         # Remove 1 pixel shift at the sides of the bbox1
         bbox1 = (bbox1[0] + 1, bbox1[1] + 1, bbox1[2] - 1, bbox1[3] - 1)
         bbox2 = (self.canvas.canvasx(0),  # get visible area of the canvas
@@ -173,20 +181,26 @@ class App(tk.Frame):
             bbox[1] = bbox1[1]
             bbox[3] = bbox1[3]
         self.canvas.configure(scrollregion=bbox)  # set scroll region
-        x1 = max(bbox2[0] - bbox1[0], 0)  # get coordinates (x1,y1,x2,y2) of the image tile
+        # get coordinates (x1,y1,x2,y2) of the image tile
+        x1 = max(bbox2[0] - bbox1[0], 0)
         y1 = max(bbox2[1] - bbox1[1], 0)
         x2 = min(bbox2[2], bbox1[2]) - bbox1[0]
         y2 = min(bbox2[3], bbox1[3]) - bbox1[1]
 
         if int(x2 - x1) > 0 and int(y2 - y1) > 0:  # show image if it in the visible area
-            x = min(int(x2 / self.imscale), self.width)   # sometimes it is larger on 1 pixel...
-            y = min(int(y2 / self.imscale), self.height)  # ...and sometimes not
-            image = self.image.crop((int(x1 / self.imscale), int(y1 / self.imscale), x, y))
-            imagetk = ImageTk.PhotoImage(image.resize((int(x2 - x1), int(y2 - y1))))
+            # sometimes it is larger on 1 pixel...
+            x = min(int(x2 / self.imscale), self.width)
+            # ...and sometimes not
+            y = min(int(y2 / self.imscale), self.height)
+            image = self.image.crop(
+                (int(x1 / self.imscale), int(y1 / self.imscale), x, y))
+            imagetk = ImageTk.PhotoImage(
+                image.resize((int(x2 - x1), int(y2 - y1))))
             imageid = self.canvas.create_image(max(bbox2[0], bbox1[0]), max(bbox2[1], bbox1[1]),
                                                anchor='nw', image=imagetk)
             self.canvas.lower(imageid)  # set image into background
-            self.canvas.imagetk = imagetk  # keep an extra reference to prevent garbage-collection
+            # keep an extra reference to prevent garbage-collection
+            self.canvas.imagetk = imagetk
 
     def wheel(self, event):
         ''' Zoom with mouse wheel '''
@@ -194,33 +208,37 @@ class App(tk.Frame):
         y = self.canvas.canvasy(event.y)
         bbox = self.canvas.bbox(self.container)  # get image area
 
-        if bbox[0] < x < bbox[2] and bbox[1] < y < bbox[3]: pass  # Ok! Inside the image
-        else: return  # zoom only inside image area
+        if bbox[0] < x < bbox[2] and bbox[1] < y < bbox[3]:
+            pass  # Ok! Inside the image
+        else:
+            return  # zoom only inside image area
         scale = 1.0
         # Respond to Linux (event.num) or Windows (event.delta) wheel event
         if event.num == 5 or event.delta == -120:  # scroll down
             i = min(self.width, self.height)
-            if int(i * self.imscale) < 30: return  # image is less than 30 pixels
+            if int(i * self.imscale) < 30:
+                return  # image is less than 30 pixels
             self.imscale /= self.delta
-            scale        /= self.delta
+            scale /= self.delta
         if event.num == 4 or event.delta == 120:  # scroll up
             i = min(self.canvas.winfo_width(), self.canvas.winfo_height())
-            if i < self.imscale: return  # 1 pixel is bigger than the visible area
+            if i < self.imscale:
+                return  # 1 pixel is bigger than the visible area
             self.imscale *= self.delta
-            scale        *= self.delta
-        self.canvas.scale('all', x, y, scale, scale)  # rescale all canvas objects
+            scale *= self.delta
+        # rescale all canvas objects
+        self.canvas.scale('all', x, y, scale, scale)
 
         self.total_zoom = self.total_zoom * scale
         self.show_image()
-
 
     def _open_image_folder(self):
         self.directory = filedialog.askdirectory()
 
     def _createCanvas(self):
         self.canvas = tk.Canvas(self.parent, width=520, height=520, bg='white')
-        self.canvas.grid(row=0, column=0, sticky='nsew', columnspan=5, rowspan=3)
-    
+        self.canvas.grid(row=0, column=0, sticky='nsew',
+                         columnspan=5, rowspan=3)
 
     def _create_buttons(self):
         #Button(root, text="1", padx=40, pady=20, command=lambda: enter_number(1))
@@ -245,12 +263,11 @@ class App(tk.Frame):
         self.current_dir_button.grid(row=4, column=1)
 
         self.open_analysis_window = tk.Button(self.parent, width=20, pady=20, bg="#88ffff",
-             text ="Open Analysis",
-             command = self.openAnalysisWindow)
+                                              text="Open Analysis",
+                                              command=self.openAnalysisWindow)
         self.open_analysis_window.grid(row=4, column=2)
 
-
-        ## analysis buttons
+        # analysis buttons
 
         self.analysis_button = tk.Button(
             self.parent, bg="#88ffff", text="Start analysis", width=20, pady=20, command=self.start_analysis)
@@ -264,21 +281,23 @@ class App(tk.Frame):
             self.parent, bg="#882244", text="select previous coord", width=20, pady=20, command=lambda: self.select_coord('backward'))
         self.select_coord_backward.grid(row=1, column=7)
 
-         ## picture slider
+        # picture slider
 
-        self.image_slider = tk.Scale(self.parent, from_=0, to=len(self.all_filter_image_paths)-1, orient=tk.HORIZONTAL, command=self.switch_image)
+        self.image_slider = tk.Scale(self.parent, from_=0, to=len(
+            self.all_filter_image_paths)-1, orient=tk.HORIZONTAL, command=self.switch_image)
         self.image_slider.grid(row=5, column=1)
 
-
     def switch_image(self, slider_value):
-        png_file_paths = [x.replace("tif", "png") for x in self.all_filter_image_paths]
+        png_file_paths = [x.replace("tif", "png")
+                          for x in self.all_filter_image_paths]
         self.all_filter_image_paths[int(slider_value)]
-        loaded_image_name = os.path.join(self.heatmap_folder, png_file_paths[int(slider_value)])
+        loaded_image_name = os.path.join(
+            self.heatmap_folder, png_file_paths[int(slider_value)])
         print(loaded_image_name)
         self.finalize_canvas(loaded_image_name)
         self.show_image()
 
-    ## I need to load all the images
+    # I need to load all the images
 
     def startRect(self, event):
         # Translate mouse screen x0,y0 coordinates to canvas coordinates
@@ -288,7 +307,6 @@ class App(tk.Frame):
         # Create rectangle
         self.rectid = self.canvas.create_rectangle(
             self.rectx0, self.recty0, self.rectx0, self.recty0, outline="#4eccde")
-
 
     def movingRect(self, event):
         # Translate mouse screen x1,y1 coordinates to canvas coordinates
@@ -308,7 +326,6 @@ class App(tk.Frame):
         # Modify rectangle x1, y1 coordinates
         self.canvas.coords(self.rectid, self.rectx0, self.recty0,
                            self.rectx1, self.recty1)
-        
 
     def save_coords(self):
         self.coord_file = os.path.join(self.coord_folder, 'coordinates.csv')
@@ -316,42 +333,42 @@ class App(tk.Frame):
         if self.rectid:
             bbox1 = self.canvas.coords(self.container)  # get image area
             bbox2 = self.canvas.coords(self.rectid)  # get roi area
-            x1 = int((bbox2[0] - bbox1[0]) / self.total_zoom)  # get upper left corner (x1,y1)
+            # get upper left corner (x1,y1)
+            x1 = int((bbox2[0] - bbox1[0]) / self.total_zoom)
             y1 = int((bbox2[1] - bbox1[1]) / self.total_zoom)
 
             # you need to find the width and height to get x2 and y2
-            bounds= self.canvas.bbox(self.rectid)
-            width= bounds[2]-bounds[0]
-            height= bounds[3]- bounds[1]
+            bounds = self.canvas.bbox(self.rectid)
+            width = bounds[2]-bounds[0]
+            height = bounds[3] - bounds[1]
             print(f'width = {width}')
             print(f'height = {height}')
-            x2 = int(x1 + width/self.total_zoom)  # get bottom right corner (x2,y2)
+            # get bottom right corner (x2,y2)
+            x2 = int(x1 + width/self.total_zoom)
             y2 = int(y1 + height/self.total_zoom)
             print(x1, y1, x2, y2)
 
         with open(self.coord_file, 'a+', newline='', encoding='UTF8') as f:
             writer = csv.writer(f)
             current_row = [os.path.split(self.directory)[-1], self.rectid, x1, y1,
-                      x2, y2] 
+                           x2, y2]
             writer.writerow(current_row)
 
-        ## check for duplicates
+        # check for duplicates
         with open(self.coord_file, newline='', encoding='UTF8') as f:
             data = list(csv.reader(f))
             new_data = [a for i, a in enumerate(data) if a not in data[:i]]
         with open(self.coord_file, 'w', newline='', encoding='UTF8') as t:
             write = csv.writer(t)
             write.writerows(new_data)
-                
 
         self.canvas.delete(self.rectid)
 
         if self.coords_shown:
             self.hide_coords()
             self.display_coords()
-        
-        self.reset_image(event=None)
 
+        self.reset_image(event=None)
 
     def display_coords(self):
 
@@ -403,43 +420,41 @@ class App(tk.Frame):
 
     def start_analysis(self):
         analysis = Analysis(self.root, self.coord_folder)
-
         analysis._load_images()
         analysis.create_subcells()
         analysis.calculate_cell_area()
 
-        #run here
+        # run here
 
         summarize_data(self.root)
-    
+
     def select_cell_button_logic(self, direction):
         all_coords = []
 
         with open(os.path.join(self.coord_folder, 'coordinates.csv'), 'r') as file:
             reader = csv.reader(file)
             for row in reader:
-                    all_coords.append(row)
-        
-        ## select coordinate
+                all_coords.append(row)
+
+        # select coordinate
         if direction == "forward":
-            
+
             if self.current_row_index > len(all_coords)-1:
                 self.current_row_index = 0
             current_row = all_coords[self.current_row_index]
             self.current_row_index = self.current_row_index + 1
-        
+
         if direction == "backward":
-            
+
             if self.current_row_index < 0:
                 self.current_row_index = len(all_coords)-1
             elif self.current_row_index > len(all_coords)-1:
                 self.current_row_index = self.current_row_index-1
 
             current_row = all_coords[self.current_row_index]
-            self.current_row_index = self.current_row_index -1
-        
-        return current_row
+            self.current_row_index = self.current_row_index - 1
 
+        return current_row
 
     def select_coord(self, direction):
 
@@ -447,14 +462,14 @@ class App(tk.Frame):
 
         if self.current_coord_selected is not None:
             self.canvas.delete(self.current_coord_selected)
-        
+
         self.reset_image(event=None)
 
         self.current_coord_selected = self.canvas.create_rectangle(
             current_row[2], current_row[3], current_row[4], current_row[5], outline="#ff0000",  width=2)
 
         self.perform_sample_analysis(current_row)
-    
+
     def perform_sample_analysis(self, current_row):
         img = self.loaded_image
         x1, y1, x2, y2 = current_row[2], current_row[3], current_row[4], current_row[5]
@@ -462,7 +477,7 @@ class App(tk.Frame):
         x2 = int(float(x2))
         y1 = int(float(y1))
         y2 = int(float(y2))
-        
+
         if x1 > x2:
             x1_temp = x1
             x1 = x2
@@ -472,34 +487,38 @@ class App(tk.Frame):
             y1_temp = y1
             y1 = y2
             y2 = y1_temp
-        
+
         cropped = img[y1:y2, x1:x2]
 
-        single_analysis = Analysis(self.root, self.coord_folder, single_cell=cropped)
+        single_analysis = Analysis(
+            self.root, self.coord_folder, single_cell=cropped)
         max_area, labelled_img = single_analysis.measure_properties(cropped)
-        current_analysis_image_path = os.path.join(self.coord_folder, "current_analysis.png")
-        rescaled_img = rescale(labelled_img, 4, anti_aliasing=False, channel_axis=2)
+        current_analysis_image_path = os.path.join(
+            self.coord_folder, "current_analysis.png")
+        rescaled_img = rescale(
+            labelled_img, 4, anti_aliasing=False, channel_axis=2)
         labelled_img_8bit = img_as_ubyte(rescaled_img)
 
         io.imsave(current_analysis_image_path, labelled_img_8bit)
 
-
         if self.current_analysis_image_label is not None:
             self.current_analysis_image_label.destroy()
 
-        current_analysis_image = (tk.PhotoImage(file=(current_analysis_image_path)))
-        self.current_analysis_image_label = tk.Label(image=current_analysis_image)
-        self.current_analysis_image_label.image = current_analysis_image # keep a reference!
+        current_analysis_image = (tk.PhotoImage(
+            file=(current_analysis_image_path)))
+        self.current_analysis_image_label = tk.Label(
+            image=current_analysis_image)
+        self.current_analysis_image_label.image = current_analysis_image  # keep a reference!
         self.current_analysis_image_label.grid(row=2, column=6, columnspan=2)
-    
+
     def openAnalysisWindow(self):
-        #Create new anlysis window
+        # Create new anlysis window
         self.analysis_window = tk.Toplevel(self.master)
         self.analysis_window.title("Analysis")
         self.analysis_window.geometry("1000x600")
         self.dropdown = tk.StringVar(self.analysis_window)
 
-        ##CREATE analysis variables
+        # CREATE analysis variables
 
         self.matching_mask = None
         self.canvas_analysis = None
@@ -508,70 +527,68 @@ class App(tk.Frame):
         self.button_quit = None
         self.slider_update = None
 
+        # CREATE frame
 
-        ##CREATE frame
-
-        self.analysis_frame = tk.Frame(self.analysis_window, relief=tk.RAISED, borderwidth=1)
+        self.analysis_frame = tk.Frame(
+            self.analysis_window, relief=tk.RAISED, borderwidth=1)
         self.analysis_frame.pack(fill=tk.BOTH, expand=True)
         self.get_analysis_data()
 
     def get_analysis_data(self):
-        #Get analysis data
+        # Get analysis data
         current_view = Viewer(self.directory)
         self.all_cell_number, self.all_cell_images, self.all_cell_masks, self.all_cell_data = current_view.select_cell_number()
-        #Extract data to create widgets
+        # Extract data to create widgets
         cell_name_list = []
 
         for i in self.all_cell_number:
             cell_name = i
-            cell_name_list.append(cell_name)   
-        self.dropdown.set(cell_name_list[0]) # default value
+            cell_name_list.append(cell_name)
+        self.dropdown.set(cell_name_list[0])  # default value
 
-
-        cell_drop_down = tk.OptionMenu(self.analysis_frame, self.dropdown, *cell_name_list, command=self.update_cell_analysis)
-        cell_drop_down.configure(width=20, height= 5, bg="#03a9f4")
+        cell_drop_down = tk.OptionMenu(
+            self.analysis_frame, self.dropdown, *cell_name_list, command=self.update_cell_analysis)
+        cell_drop_down.configure(width=20, height=5, bg="#03a9f4")
         cell_drop_down['menu'].config(bg="#03a9f4")
-        cell_drop_down.pack(side = tk.LEFT)
-
+        cell_drop_down.pack(side=tk.LEFT)
 
         self.currently_selected_cell_images = self.all_cell_images[0]
         self.currently_selected_cell_masks = self.all_cell_masks[0]
         self.currently_selected_cell_data = self.all_cell_data[0]
-        
-        self.place_analysis_images(self.currently_selected_cell_masks, self.currently_selected_cell_images)
+
+        self.place_analysis_images(
+            self.currently_selected_cell_masks, self.currently_selected_cell_images)
         self.plot_matplotlib(self.currently_selected_cell_data)
-        
 
     def update_cell_analysis(self, new_val):
-        
+
         current_number = int(self.all_cell_number.index(new_val))
-        #then I subtract 1 because cell 1 is index 0
+        # then I subtract 1 because cell 1 is index 0
 
-        ## find index of new val in all_cell_number
+        # find index of new val in all_cell_number
 
-
-        ## find out how to make it work with double digits
+        # find out how to make it work with double digits
 
         self.currently_selected_cell_images = self.all_cell_images[current_number]
         self.currently_selected_cell_masks = self.all_cell_masks[current_number]
         self.currently_selected_cell_data = self.all_cell_data[current_number]
 
-
-        self.place_analysis_images(self.currently_selected_cell_masks, self.currently_selected_cell_images)
+        self.place_analysis_images(
+            self.currently_selected_cell_masks, self.currently_selected_cell_images)
         self.plot_matplotlib(self.currently_selected_cell_data)
 
-    def place_analysis_images(self, cell_masks, cell_images, current_image_number = 0):
-        ### add current cell mask
+    def place_analysis_images(self, cell_masks, cell_images, current_image_number=0):
+        # add current cell mask
 
-        ##remove previous cell label
+        # remove previous cell label
 
         if self.matching_mask is not None:
             self.matching_mask.destroy()
             self.matching_image.destroy()
-        
+
         current_cell_mask = cell_masks[current_image_number]
         pi = Image.fromarray(current_cell_mask)
-        
+
         height = 600
         self.max_image_size = 200
         multiplier = 8
@@ -580,30 +597,31 @@ class App(tk.Frame):
             multiplier = multiplier - 1
             (width, height) = (pi.width * multiplier, pi.height * multiplier)
 
-        
         current_cell_mask_resized = pi.resize((width, height))
 
         self.current_cell_mask = ImageTk.PhotoImage(current_cell_mask_resized)
-        self.matching_mask = tk.Label(self.analysis_frame, image=self.current_cell_mask)
-        self.matching_mask.image = self.current_cell_mask # keep a reference!
-        self.matching_mask.pack(side = tk.RIGHT)
-        
-        ##place image
-        
-        logarithmic_corrected = exposure.rescale_intensity(cell_images[current_image_number])
+        self.matching_mask = tk.Label(
+            self.analysis_frame, image=self.current_cell_mask)
+        self.matching_mask.image = self.current_cell_mask  # keep a reference!
+        self.matching_mask.pack(side=tk.RIGHT)
+
+        # place image
+
+        logarithmic_corrected = exposure.rescale_intensity(
+            cell_images[current_image_number])
         logarithmic_corrected = img_as_ubyte(logarithmic_corrected)
 
         pi = Image.fromarray(logarithmic_corrected)
         current_cell_image_resized = pi.resize((width, height))
 
-        self.current_cell_image = ImageTk.PhotoImage(current_cell_image_resized)
-        self.matching_image = tk.Label(self.analysis_frame, image=self.current_cell_image)
-        self.matching_image.image = self.current_cell_image # keep a reference!
-        self.matching_image.pack(side = tk.RIGHT)
+        self.current_cell_image = ImageTk.PhotoImage(
+            current_cell_image_resized)
+        self.matching_image = tk.Label(
+            self.analysis_frame, image=self.current_cell_image)
+        self.matching_image.image = self.current_cell_image  # keep a reference!
+        self.matching_image.pack(side=tk.RIGHT)
 
-        
-        
-        ###Implement matplotlib figure
+        # Implement matplotlib figure
 
     def plot_matplotlib(self, data):
 
@@ -612,9 +630,9 @@ class App(tk.Frame):
             self.toolbar.destroy()
             self.button_quit.destroy()
             self.slider_update.destroy()
-            
+
         self.x_values, self.y_values = data['Time'], data['Area']
-        
+
         fig = Figure(figsize=(5, 4), dpi=100)
         ax = fig.add_subplot()
         self.main_plot_image, = ax.plot(self.x_values, self.y_values)
@@ -623,27 +641,31 @@ class App(tk.Frame):
         lower_y, upper_y = ax.get_ylim()
         self.int_ly = int(floor(lower_y))
         self.int_uy = int(ceil(upper_y))
-        self.y_values_vline = range(self.int_ly,self.int_uy)
-        self.x_values_vline = [0]* len(range(self.int_ly,self.int_uy))
+        self.y_values_vline = range(self.int_ly, self.int_uy)
+        self.x_values_vline = [0] * len(range(self.int_ly, self.int_uy))
         self.line2, = ax.plot(self.x_values_vline, self.y_values_vline)
 
         ax.set_ylabel("Area [pixels]")
         ax.set_xlabel("frame")
 
-        self.canvas_analysis = FigureCanvasTkAgg(fig, master=self.analysis_window)  # A tk.DrawingArea.
+        # A tk.DrawingArea.
+        self.canvas_analysis = FigureCanvasTkAgg(
+            fig, master=self.analysis_window)
         self.canvas_analysis.draw()
 
-        self.toolbar = NavigationToolbar2Tk(self.canvas_analysis, self.analysis_window, pack_toolbar=False)
+        self.toolbar = NavigationToolbar2Tk(
+            self.canvas_analysis, self.analysis_window, pack_toolbar=False)
         self.toolbar.update()
 
         self.canvas_analysis.mpl_connect(
             "key_press_event", lambda event: print(f"you pressed {event.key}"))
         self.canvas_analysis.mpl_connect("key_press_event", key_press_handler)
 
-        self.button_quit = tk.Button(master=self.analysis_window, text="Quit", command=self.analysis_window.destroy, bg='#03a9f4', pady=20, padx=40)
+        self.button_quit = tk.Button(master=self.analysis_window, text="Quit",
+                                     command=self.analysis_window.destroy, bg='#03a9f4', pady=20, padx=40)
 
         self.slider_update = tk.Scale(self.analysis_window, from_=0, to=len(data)-1, orient=tk.HORIZONTAL,
-                                    command=self.update_frequency, label="Frame Number")
+                                      command=self.update_frequency, label="Frame Number")
 
         # Packing order is important. Widgets are processed sequentially and if there
         # is no space left, because the window is too small, they are not displayed.
@@ -654,24 +676,19 @@ class App(tk.Frame):
         self.toolbar.pack(side=tk.BOTTOM, fill=tk.X)
         self.canvas_analysis.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
 
- 
     def update_frequency(self, new_val):
-            # retrieve frequency
-            current_slider_val = int(new_val)
-            # update data
-            self.x_values = [current_slider_val]* len(range(self.int_ly, self.int_uy))
+        # retrieve frequency
+        current_slider_val = int(new_val)
+        # update data
+        self.x_values = [current_slider_val] * \
+            len(range(self.int_ly, self.int_uy))
 
-            self.y_values_vline = range(self.int_ly,self.int_uy)
-            self.line2.set_data(self.x_values, self.y_values_vline)
-            # required to update canvas and attached toolbar!
-            self.canvas_analysis.draw()
+        self.y_values_vline = range(self.int_ly, self.int_uy)
+        self.line2.set_data(self.x_values, self.y_values_vline)
+        # required to update canvas and attached toolbar!
+        self.canvas_analysis.draw()
 
-            ##update images
+        # update images
 
-            self.place_analysis_images(self.currently_selected_cell_masks, self.currently_selected_cell_images, current_slider_val)
-
-
-        
-
-
-
+        self.place_analysis_images(self.currently_selected_cell_masks,
+                                   self.currently_selected_cell_images, current_slider_val)
