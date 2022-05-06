@@ -141,7 +141,6 @@ class Analysis():
         import cv2
         image = np.uint8(image)
         _,thresh = cv2.threshold(image, np.mean(image), 255, cv2.THRESH_BINARY_INV)
-        thresh = np.uint8(thresh)
         edges = cv2.dilate(cv2.Canny(thresh,0,255),None)
 
         cnt = sorted(cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)[-2], key=cv2.contourArea)[-1]
@@ -150,6 +149,8 @@ class Analysis():
 
         # dst = cv2.bitwise_and(image, image, mask=mask)
         # segmented = cv2.cvtColor(dst, cv2.COLOR_BGR2GRAY)
+
+        follow here https://machinelearningknowledge.ai/image-segmentation-in-python-opencv/#ii_Contour_Detection
 
         segmented = masked/255
         binary = img_free > thresh
