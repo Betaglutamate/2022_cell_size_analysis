@@ -119,7 +119,7 @@ class Analysis():
             plt.savefig(os.path.normpath(os.path.join(
                 path, "analysis", f"{cell_number}_cellplot.png")))
 
-
+            plt.close()
             analysis_df = pd.DataFrame({"Time": time_list, "Area": area_list})
             analysis_df.to_csv(os.path.normpath(os.path.join(
                 path, "analysis", f"{cell_number}_dataframe.csv")))

@@ -13,6 +13,7 @@ from gather_data import summarize_data
 from matplotlib.pyplot import imsave
 from skimage import io, img_as_ubyte
 from skimage.exposure import rescale_intensity
+from skimage.transform import rescale
 from matplotlib.backends.backend_tkagg import (
             FigureCanvasTkAgg, NavigationToolbar2Tk)
 # Implement the default Matplotlib key bindings.
@@ -32,28 +33,22 @@ class App(tk.Frame):
 
 
     def _initialize_image(self):
-        self.loaded_image = []
         self.my_images = []
 
         for root, dirs, files in os.walk(self.directory, topdown=False):
             self.root = root
-            for name in files:
-                if "tif" in name:
-                    file_name = (os.path.join(root, name)).replace("\\", "/")
-                    self.loaded_image.append(file_name)
 
         # make coord folder to save coord and display img
         self.coord_folder = os.path.normpath(os.path.join(self.root, "coords"))
         Path(self.coord_folder).mkdir(parents=True, exist_ok=True)
 
-        sample_image = io.imread(self.loaded_image[0])
-        
+        sample_image = io.imread_collection(f'{root}/*.tif')[0]
+        self.loaded_image = sample_image
 
         ravel_image = np.sort(sample_image.ravel())
         cut_image = ravel_image[int((len(sample_image)*0.3)):-int((len(sample_image)*0.3))]
         
         min_img, max_img = (cut_image.min(), cut_image.max())
-        print(min_img, max_img)
         sample_image = rescale_intensity(sample_image, (min_img, max_img))
         sample_image_path = os.path.normpath(
             os.path.join(self.coord_folder, "display_image.png"))
@@ -286,12 +281,12 @@ class App(tk.Frame):
             self.canvas.delete(self.current_coord_selected)
 
         self.current_coord_selected = self.canvas.create_rectangle(
-            current_row[2], current_row[3], current_row[4], current_row[5], outline="#000000",  width=2)
+            current_row[2], current_row[3], current_row[4], current_row[5], outline="#ff0000",  width=2)
 
         self.perform_sample_analysis(current_row)
     
     def perform_sample_analysis(self, current_row):
-        img = io.imread(self.loaded_image[0])
+        img = self.loaded_image
         x1, y1, x2, y2 = current_row[2], current_row[3], current_row[4], current_row[5]
         x1 = int(float(x1))
         x2 = int(float(x2))
@@ -313,7 +308,8 @@ class App(tk.Frame):
         single_analysis = Analysis(self.root, self.coord_folder, single_cell=cropped)
         max_area, labelled_img = single_analysis.measure_properties(cropped)
         current_analysis_image_path = os.path.join(self.coord_folder, "current_analysis.png")
-        labelled_img_8bit = img_as_ubyte(labelled_img)
+        rescaled_img = rescale(labelled_img, 4, anti_aliasing=False, channel_axis=2)
+        labelled_img_8bit = img_as_ubyte(rescaled_img)
 
         io.imsave(current_analysis_image_path, labelled_img_8bit)
 
@@ -352,12 +348,12 @@ class App(tk.Frame):
     def get_analysis_data(self):
         #Get analysis data
         current_view = Viewer(self.directory)
-        num_cell_dirs, self.all_cell_images, self.all_cell_masks, self.all_cell_data = current_view.select_cell_number()
+        self.all_cell_number, self.all_cell_images, self.all_cell_masks, self.all_cell_data = current_view.select_cell_number()
         #Extract data to create widgets
         cell_name_list = []
 
-        for i in range(num_cell_dirs):
-            cell_name = f"cell_{i+1}"
+        for i in self.all_cell_number:
+            cell_name = i
             cell_name_list.append(cell_name)   
         self.dropdown.set(cell_name_list[0]) # default value
 
@@ -378,9 +374,11 @@ class App(tk.Frame):
 
     def update_cell_analysis(self, new_val):
         
-        current_number = [s for s in new_val.split('_')][-1]
-        current_number = int(current_number)-1 ## so first i get the name like cell_number 4 then I get the last digit
+        current_number = int(self.all_cell_number.index(new_val))
         #then I subtract 1 because cell 1 is index 0
+
+        ## find index of new val in all_cell_number
+
 
         ## find out how to make it work with double digits
 

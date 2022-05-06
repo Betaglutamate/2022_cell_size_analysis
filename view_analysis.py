@@ -16,8 +16,10 @@ class Viewer():
         all_cell_images = []
         all_cell_masks = []
         all_cell_data = []
+        all_cell_number = []
 
         for dir in cell_analysis_dirs:
+            print(dir)
             cell_images = io.imread_collection(dir + '/*.png')
             cell_masks = io.imread_collection(dir + '/_labelled'+ '/*.png')
             cell_number = os.path.split(dir)[1]
@@ -25,9 +27,10 @@ class Viewer():
             all_cell_images.append(cell_images)
             all_cell_masks.append(cell_masks)
             all_cell_data.append(data)
+            all_cell_number.append(cell_number)
 
 
-        return num_cell_dirs, all_cell_images, all_cell_masks, all_cell_data
+        return all_cell_number, all_cell_images, all_cell_masks, all_cell_data
 
 
     # open the images
