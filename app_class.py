@@ -45,7 +45,6 @@ class App(tk.Frame):
             all_image_paths.extend(file)
             break
         self.root = root
-        print(self.root)
         # make sure that the image paths are in correct time order
         all_image_paths.sort()
         self.all_filter_image_paths = []
@@ -101,7 +100,6 @@ class App(tk.Frame):
     def finalize_canvas(self, sample_image_path):
 
         self.image = Image.open(sample_image_path)  # open image
-        print(sample_image_path)
         self.width, self.height = self.image.size
         self.container = self.canvas.create_rectangle(
             0, 0, self.width, self.height, width=0)
@@ -154,7 +152,6 @@ class App(tk.Frame):
     # added stuff
 
     def reset_image(self, event):
-        print("activated")
         self.total_zoom = 1
         self.canvas.destroy()
         self._createCanvas()
@@ -293,7 +290,6 @@ class App(tk.Frame):
         self.all_filter_image_paths[int(slider_value)]
         loaded_image_name = os.path.join(
             self.heatmap_folder, png_file_paths[int(slider_value)])
-        print(loaded_image_name)
         self.finalize_canvas(loaded_image_name)
         self.show_image()
 
@@ -341,12 +337,9 @@ class App(tk.Frame):
             bounds = self.canvas.bbox(self.rectid)
             width = bounds[2]-bounds[0]
             height = bounds[3] - bounds[1]
-            print(f'width = {width}')
-            print(f'height = {height}')
             # get bottom right corner (x2,y2)
             x2 = int(x1 + width/self.total_zoom)
             y2 = int(y1 + height/self.total_zoom)
-            print(x1, y1, x2, y2)
 
         with open(self.coord_file, 'a+', newline='', encoding='UTF8') as f:
             writer = csv.writer(f)

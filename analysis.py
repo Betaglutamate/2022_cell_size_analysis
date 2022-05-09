@@ -24,6 +24,7 @@ class Analysis():
     def _load_images(self):
         self.img_collection = io.imread_collection(
             os.path.normpath(self.path + '/*.tif'))
+        print(self.path)
 
     def create_subcells(self):
         # load images into sk ima
@@ -127,35 +128,25 @@ class Analysis():
             regions
         '''
 
-#         cutoff = 0.90 # choose what percent of pixel intensities you want to cut off
-#         d_img = image
-#         # subtratc background from image then choose the 20% brightest pixels and define those as cell
-#         #n= 10
-        background_intensity = np.mean(image[0:5, 0:5])
-        img_free = image-background_intensity
-#         ravel_image = np.sort(img_free.ravel())
+        # background_intensity = np.mean(image[0:5, 0:5])
+        # img_free = image-background_intensity
 
-#         #thresh = np.partition(d_img[0], n-1)[n-1].max()
-        thresh = threshold_otsu(img_free)
+        from skimage.morphology import binary_opening
+        from skimage.feature import canny
+        from scipy.ndimage import binary_fill_holes
 
-        import cv2
-        image = np.uint8(image)
-        _,thresh = cv2.threshold(image, np.mean(image), 255, cv2.THRESH_BINARY_INV)
-        edges = cv2.dilate(cv2.Canny(thresh,0,255),None)
+        new_im = img_as_ubyte(image) #Convert image to ubyte for background measurement
+        thresh = threshold_otsu(new_im)
+        final_im = new_im < thresh
+        dilated_img = binary_opening(final_im)
+        edges = canny(dilated_img)
 
-        cnt = sorted(cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)[-2], key=cv2.contourArea)[-1]
-        mask = np.zeros(img_free.shape, np.uint8)
-        masked = cv2.drawContours(mask, [cnt],-1, 255, -1)
 
-        # dst = cv2.bitwise_and(image, image, mask=mask)
-        # segmented = cv2.cvtColor(dst, cv2.COLOR_BGR2GRAY)
 
-        follow here https://machinelearningknowledge.ai/image-segmentation-in-python-opencv/#ii_Contour_Detection
+        finished_img = ndimage.binary_fill_holes(edges)
 
-        segmented = masked/255
-        binary = img_free > thresh
-        label_im = label(segmented)
-        clusters = regionprops(label_im, img_free)
+        label_im = label(finished_img)
+        clusters = regionprops(label_im, new_im)
 
         filtered_list = []
         max_area_list = []
@@ -164,13 +155,16 @@ class Analysis():
             max_area_list.append(point.area)
 
         # find largest area
-        probably_cell = max_area_list.index(max(max_area_list))
+        try:
+            probably_cell = max_area_list.index(max(max_area_list))
+        except ValueError:
+            print('empty array')
 
         obj_coords = []
         for obj in filtered_list:
             obj_coords.append(obj.coords)
 
-        new_img = np.zeros(img_free.shape)
+        new_img = np.zeros(new_im.shape)
 
         for pos in obj_coords[probably_cell]:
             x, y = pos[0], pos[1]
