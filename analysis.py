@@ -136,10 +136,11 @@ class Analysis():
         from scipy.ndimage import binary_fill_holes
 
         new_im = img_as_ubyte(image) #Convert image to ubyte for background measurement
-        thresh = threshold_otsu(new_im)
+        #thresh = threshold_otsu(new_im)
+        thresh = np.mean(new_im)
         final_im = new_im < thresh
         dilated_img = binary_opening(final_im)
-        edges = canny(dilated_img)
+        edges = canny(final_im)
 
 
 
