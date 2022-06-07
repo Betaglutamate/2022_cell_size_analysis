@@ -28,8 +28,6 @@ StarDist2D.from_pretrained()
 
 # creates a pretrained model
 model = StarDist2D.from_pretrained('2D_versatile_fluo')
-
-from stardist.data import test_image_nuclei_2d
 from stardist.plot import render_label
 from csbdeep.utils import normalize
 
@@ -240,7 +238,7 @@ class App(tk.Frame):
         self.show_image()
 
     def _open_image_folder(self):
-        self.directory = filedialog.askdirectory()
+        self.directory = filedialog.askdirectory(initialdir = '/home/betaglutamate/OneDrive/00_PhD/00_Phd_data/02_Project_Trehalose_synthesis')
 
     def _createCanvas(self):
         self.canvas = tk.Canvas(self.parent, width=520, height=520, bg='white')
