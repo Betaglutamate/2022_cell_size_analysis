@@ -1,6 +1,8 @@
 
 *.tif
+<<<<<<< Updated upstream
+=======
 *.avi
+>>>>>>> Stashed changes
 *.png
 *.pyc
-unet_folder/*
