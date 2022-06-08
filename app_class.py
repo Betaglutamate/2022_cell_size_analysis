@@ -21,18 +21,6 @@ from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
 import threading
 
-from stardist.models import StarDist2D
-
-# prints a list of available models
-StarDist2D.from_pretrained()
-
-# creates a pretrained model
-model = StarDist2D.from_pretrained('2D_versatile_fluo')
-
-from stardist.data import test_image_nuclei_2d
-from stardist.plot import render_label
-from csbdeep.utils import normalize
-
 
 class App(tk.Frame):
     def __init__(self, parent):
@@ -80,13 +68,15 @@ class App(tk.Frame):
     def rescale_images(self, filename):
         if not os.path.exists(os.path.join(self.heatmap_folder, f'{filename.split(".")[0]}.png')):
             current_image = io.imread(os.path.join(self.root, filename))
-
-            labels, _ = model.predict_instances(normalize(current_image))
-            annotated_img = render_label(labels, img=current_image)
+            ravel_image = np.sort(current_image.ravel())
+            cut_image = ravel_image[int(
+                (len(current_image)*0.3)):-int((len(current_image)*0.3))]
+            min_img, max_img = (cut_image.min(), cut_image.max())
+            sample_image = rescale_intensity(current_image, in_range='image', out_range=(0,1))
             save_file_path = os.path.normpath(
                 os.path.join(self.heatmap_folder, f'{filename.split(".")[0]}.png'))
 
-            imsave(save_file_path, arr=annotated_img)
+            imsave(save_file_path, arr=sample_image, cmap="magma")
 
     def _initialize_image(self):
         # make coord folder to save coord and display img
