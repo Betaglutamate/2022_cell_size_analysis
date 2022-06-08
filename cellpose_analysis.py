@@ -1,5 +1,5 @@
 import numpy as np
-from cellpose import models, io
+from cellpose import models, io, utils
 import os
 from skimage import color, exposure
 from skimage.io import imshow
@@ -23,7 +23,13 @@ def run_cellpose_segment(filename, model):
 
     channels = [[0,0]] #0, 0 means grayscale image
 
+
     masks, flows, styles = model.eval(imgs, diameter=None, channels=channels)
+    
+
+    outlines = utils.outlines_list(masks[0])
+
+    
     return imgs, masks
 
 def create_labelled_imgs(masks, imgs):

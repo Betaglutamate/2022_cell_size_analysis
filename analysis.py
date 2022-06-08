@@ -1,7 +1,6 @@
 from skimage import io, img_as_ubyte
-from skimage.filters import threshold_otsu
 from skimage.measure import label, regionprops
-from skimage.color import label2rgb
+from skimage.color import label2rgb, rgb2gray
 from skimage.restoration import denoise_nl_means, estimate_sigma
 import os
 import csv
@@ -138,45 +137,59 @@ class Analysis():
 
         # dilated_img = binary_opening(final_im)
         # edges = canny(dilated_img)
-        clusters = regionprops(image)
+
+        a = image[...,0:3]
+
+        b = rgb2gray(a)
+
+        bit = img_as_ubyte(b)
+        x = bit >= 22
+
+        label_image = label(x)
+        test_label = label2rgb(label_image, image=b, bg_label=0)
+        region_props = regionprops(label_image)
+
+
+        self.new_img = np.zeros(image[:,:,0].shape)
+
+        # for pos in region_props:
+        #     for obj in pos.coords:
+        #         x, y = obj[0], obj[1]
+        #         print(x, y)
+        #         new_img[x, y] = 255
 
         filtered_list = []
         max_area_list = []
-        for point in clusters:
+        for point in region_props:
             filtered_list.append(point)
             max_area_list.append(point.area)
         
         # find largest area
         try:
             probably_cell = max_area_list.index(max(max_area_list))
+
+            obj_coords = []
+            for obj in filtered_list:
+                for pos in obj.coords:
+                    x, y = pos[0], pos[1]
+                    self.new_img[x, y] = 255
+            
+            # labelled_img, labels = ndimage.label(new_img)
+            # labelled_img = label2rgb(new_img, bg_label=0)
+            # labelled_img[0:5, 0:5, :] = [0, 0, 1]
+
+            # save new image here
+
+            self.max_area = max_area_list[probably_cell]
+
+
+            return self.max_area, self.new_img
         except ValueError:
             print('empty array')
-
-        obj_coords = []
-        for obj in filtered_list:
-            obj_coords.append(obj.coords)
-
-        new_img = np.zeros(image.shape)
-
-        for pos in obj_coords[probably_cell]:
-            x, y = pos[0], pos[1]
-            new_img[x, y] = 255
+            return self.max_area, self.new_img
 
 
-
-
-        # labelled_img, labels = ndimage.label(new_img)
-        # labelled_img = label2rgb(new_img, bg_label=0)
-        # labelled_img[0:5, 0:5, :] = [0, 0, 1]
-
-        # save new image here
-
-        max_area = max_area_list[probably_cell]
-        print(max_area)
-
-        import pdb; pdb.set_trace()
-
-        return max_area, new_img
+        
 
 
     def denoise_img(self, img):
