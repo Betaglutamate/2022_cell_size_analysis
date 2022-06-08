@@ -1,29 +1,27 @@
 from skimage import io, img_as_ubyte
 from skimage.filters import threshold_otsu
 from skimage.measure import label, regionprops
-from skimage.exposure import rescale_intensity
 from skimage.color import label2rgb
 from skimage.restoration import denoise_nl_means, estimate_sigma
 import os
 import csv
 from pathlib import Path
-import seaborn as sns
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy import ndimage
 import pandas as pd
-from sympy import N
 
 
 class Analysis():
-    def __init__(self, path, coord_folder, **kwargs):
+    def __init__(self, path, coord_folder, masks_folder, **kwargs):
         self.path = path
+        self.masks = masks_folder
         self.coord_folder = coord_folder
         self.single_image = kwargs.get('single_cell')
 
     def _load_images(self):
         self.img_collection = io.imread_collection(
-            os.path.normpath(self.path + '/*.tif'))
+            os.path.normpath(self.masks + '/*.png'))
         print(self.path)
 
     def create_subcells(self):
@@ -97,7 +95,8 @@ class Analysis():
                 area, label_image = self.measure_properties(image)
                 time_list.append(num)
                 area_list.append(area)
-                label_img_8bit = img_as_ubyte(label_image)
+                label_img_8bit = label_image
+                
                 io.imsave(os.path.join(
                     label_path, f"label_image_{num}.png"), label_img_8bit, check_contrast=False)
 
@@ -133,26 +132,20 @@ class Analysis():
         # from skimage.morphology import binary_opening
         # from skimage.feature import canny
         # from scipy.ndimage import binary_fill_holes
-
-        new_im = img_as_ubyte(image) #Convert image to ubyte for background measurement
-        thresh = threshold_otsu(new_im)
-        final_im = new_im < thresh
+        
+        # thresh = threshold_otsu(new_im)        
+        # final_im = new_im < thresh
 
         # dilated_img = binary_opening(final_im)
         # edges = canny(dilated_img)
-
-
-        finished_img = ndimage.binary_fill_holes(edges)
-
-        label_im = label(final_im)
-        clusters = regionprops(label_im, new_im)
+        clusters = regionprops(image)
 
         filtered_list = []
         max_area_list = []
         for point in clusters:
             filtered_list.append(point)
             max_area_list.append(point.area)
-
+        
         # find largest area
         try:
             probably_cell = max_area_list.index(max(max_area_list))
@@ -163,20 +156,27 @@ class Analysis():
         for obj in filtered_list:
             obj_coords.append(obj.coords)
 
-        new_img = np.zeros(new_im.shape)
+        new_img = np.zeros(image.shape)
 
         for pos in obj_coords[probably_cell]:
             x, y = pos[0], pos[1]
             new_img[x, y] = 255
 
-        labelled_img, labels = ndimage.label(new_img)
-        labelled_img = label2rgb(labelled_img, bg_label=0)
-        labelled_img[0:5, 0:5, :] = [0, 0, 1]
+
+
+
+        # labelled_img, labels = ndimage.label(new_img)
+        # labelled_img = label2rgb(new_img, bg_label=0)
+        # labelled_img[0:5, 0:5, :] = [0, 0, 1]
 
         # save new image here
 
         max_area = max_area_list[probably_cell]
-        return max_area, labelled_img
+        print(max_area)
+
+        import pdb; pdb.set_trace()
+
+        return max_area, new_img
 
 
     def denoise_img(self, img):

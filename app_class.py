@@ -20,6 +20,7 @@ from matplotlib.backends.backend_tkagg import (
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.figure import Figure
 import threading
+from cellpose_analysis import create_model, run_cellpose_segment, create_labelled_imgs
 
 
 class App(tk.Frame):
@@ -32,13 +33,18 @@ class App(tk.Frame):
         self._create_buttons()
         self._initialize_image()
         self.finalize_canvas(sample_image_path=self.sample_image_path)
+        self.model = create_model()
         t = threading.Thread(target=self.background_task)
         t.start()
 
     def background_task(self):
+        '''This will run in the background and generate the images for scrolling through
+        '''
         self._generate_heatmaps()
 
     def _get_image_paths(self):
+        '''Here I collect all image names in the selected folder note I filter for tif
+        '''
         all_image_paths = []
 
         for root, dirs, file in os.walk(self.directory):
@@ -49,14 +55,17 @@ class App(tk.Frame):
         all_image_paths.sort()
         self.all_filter_image_paths = []
         for image_path in all_image_paths:
-            if 'tif' in image_path:
+            if 'tif' in image_path: #tif filter incase other file types
                 self.all_filter_image_paths.append(image_path)
 
         # make coord folder to save coord and display img
     def _generate_heatmaps(self):
         self.heatmap_folder = os.path.normpath(
             os.path.join(self.root, "heatmap"))
+        self.masks_folder = os.path.normpath(
+            os.path.join(self.root, "masks"))
         Path(self.heatmap_folder).mkdir(parents=True, exist_ok=True)
+        Path(self.masks_folder).mkdir(parents=True, exist_ok=True)
 
         i = 0
         for file in self.all_filter_image_paths:
@@ -66,17 +75,22 @@ class App(tk.Frame):
                 f'converting image {i} out of {len(self.all_filter_image_paths)}')
 
     def rescale_images(self, filename):
+
         if not os.path.exists(os.path.join(self.heatmap_folder, f'{filename.split(".")[0]}.png')):
             current_image = io.imread(os.path.join(self.root, filename))
-            ravel_image = np.sort(current_image.ravel())
-            cut_image = ravel_image[int(
-                (len(current_image)*0.3)):-int((len(current_image)*0.3))]
-            min_img, max_img = (cut_image.min(), cut_image.max())
-            sample_image = rescale_intensity(current_image, in_range='image', out_range=(0,1))
+            # ravel_image = np.sort(current_image.ravel())
+            # cut_image = ravel_image[int(
+            #     (len(current_image)*0.3)):-int((len(current_image)*0.3))]
+            sample_image = rescale_intensity(current_image)
+            imgs, masks = run_cellpose_segment(filename, self.model)
+            labelled_imgs = create_labelled_imgs(masks, imgs)
             save_file_path = os.path.normpath(
                 os.path.join(self.heatmap_folder, f'{filename.split(".")[0]}.png'))
+            save_file_path_masks = os.path.normpath(
+                os.path.join(self.masks_folder, f'{filename.split(".")[0]}.png'))
 
-            imsave(save_file_path, arr=sample_image, cmap="magma")
+            imsave(save_file_path, arr=labelled_imgs[0])
+            imsave(save_file_path_masks, arr=masks[0])
 
     def _initialize_image(self):
         # make coord folder to save coord and display img
@@ -85,11 +99,7 @@ class App(tk.Frame):
 
         self.loaded_image = io.imread(os.path.join(
             self.root, self.all_filter_image_paths[0]))
-        ravel_image = np.sort(self.loaded_image.ravel())
-        cut_image = ravel_image[int(
-            (len(self.loaded_image)*0.3)):-int((len(self.loaded_image)*0.3))]
-        min_img, max_img = (cut_image.min(), cut_image.max())
-        sample_image = rescale_intensity(self.loaded_image, (min_img, max_img))
+        sample_image = rescale_intensity(self.loaded_image)
         self.sample_image_path = os.path.normpath(
             os.path.join(self.coord_folder, "display_image.png"))
 
@@ -412,7 +422,7 @@ class App(tk.Frame):
         self.display_coords()
 
     def start_analysis(self):
-        analysis = Analysis(self.root, self.coord_folder)
+        analysis = Analysis(self.root, self.coord_folder, masks_folder = self.masks_folder)
         analysis._load_images()
         analysis.create_subcells()
         analysis.calculate_cell_area()
