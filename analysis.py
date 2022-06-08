@@ -12,19 +12,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import ndimage
 import pandas as pd
-from stardist.models import StarDist2D
-from csbdeep.utils import normalize
-from tqdm import tqdm
-
+from sympy import N
 
 
 class Analysis():
     def __init__(self, path, coord_folder, **kwargs):
-        self.model = StarDist2D.from_pretrained('2D_versatile_fluo')
         self.path = path
         self.coord_folder = coord_folder
         self.single_image = kwargs.get('single_cell')
-
 
     def _load_images(self):
         self.img_collection = io.imread_collection(
@@ -98,7 +93,7 @@ class Analysis():
 
             # Try calculating threshold based on first image only
 
-            for num, image in tqdm(enumerate(cell_collection)):
+            for num, image in enumerate(cell_collection):
                 area, label_image = self.measure_properties(image)
                 time_list.append(num)
                 area_list.append(area)
@@ -141,17 +136,18 @@ class Analysis():
         from scipy.ndimage import binary_fill_holes
 
         new_im = img_as_ubyte(image) #Convert image to ubyte for background measurement
-        # #thresh = threshold_otsu(new_im)
-        # thresh = np.mean(new_im)
-        # final_im = new_im < thresh
-        # dilated_img = binary_opening(final_im)
-        # edges = canny(final_im)
-        #finished_img = ndimage.binary_fill_holes(edges)
+        #thresh = threshold_otsu(new_im)
+        thresh = np.mean(new_im)
+        final_im = new_im < thresh
+        dilated_img = binary_opening(final_im)
+        edges = canny(final_im)
 
-        labels, _ = self.model.predict_instances(normalize(image))
 
-        #label_im = label(labels)
-        clusters = regionprops(labels, image)
+
+        finished_img = ndimage.binary_fill_holes(edges)
+
+        label_im = label(finished_img)
+        clusters = regionprops(label_im, new_im)
 
         filtered_list = []
         max_area_list = []
