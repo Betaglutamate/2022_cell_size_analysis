@@ -130,22 +130,21 @@ class Analysis():
 
         # background_intensity = np.mean(image[0:5, 0:5])
         # img_free = image-background_intensity
-
-        from skimage.morphology import binary_opening
-        from skimage.feature import canny
-        from scipy.ndimage import binary_fill_holes
+        # from skimage.morphology import binary_opening
+        # from skimage.feature import canny
+        # from scipy.ndimage import binary_fill_holes
 
         new_im = img_as_ubyte(image) #Convert image to ubyte for background measurement
         thresh = threshold_otsu(new_im)
         final_im = new_im < thresh
-        dilated_img = binary_opening(final_im)
-        edges = canny(dilated_img)
 
+        # dilated_img = binary_opening(final_im)
+        # edges = canny(dilated_img)
 
 
         finished_img = ndimage.binary_fill_holes(edges)
 
-        label_im = label(finished_img)
+        label_im = label(final_im)
         clusters = regionprops(label_im, new_im)
 
         filtered_list = []
@@ -178,6 +177,7 @@ class Analysis():
 
         max_area = max_area_list[probably_cell]
         return max_area, labelled_img
+
 
     def denoise_img(self, img):
         """estimate the noise standard deviation from the noisy image"""
