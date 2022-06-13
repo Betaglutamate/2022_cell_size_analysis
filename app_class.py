@@ -32,7 +32,7 @@ class App(tk.Frame):
         self._createCanvas()
         self._create_buttons()
         self._initialize_image()
-        self.finalize_canvas(sample_image_path=self.sample_image_path)
+        self.finalize_canvas(sample_image_path=None)
         self.model = create_model()
 
         # I also start a thread to do cellpose calculations
@@ -63,7 +63,7 @@ class App(tk.Frame):
                 self.all_filter_image_paths.append(image_path)
 
         # make coord folder to save coord and display img
-    def _generate_heatmaps(self):
+
         self.heatmap_folder = os.path.normpath(
             os.path.join(self.root, "heatmap"))
         self.masks_folder = os.path.normpath(
@@ -71,6 +71,7 @@ class App(tk.Frame):
         Path(self.heatmap_folder).mkdir(parents=True, exist_ok=True)
         Path(self.masks_folder).mkdir(parents=True, exist_ok=True)
 
+    def _generate_heatmaps(self):
         i = 0
         for file in self.all_filter_image_paths:
             i = i+1
@@ -88,7 +89,7 @@ class App(tk.Frame):
             # cut_image = ravel_image[int(
             #     (len(current_image)*0.3)):-int((len(current_image)*0.3))]
             sample_image = rescale_intensity(current_image)
-            imgs, masks = run_cellpose_segment(filename, self.model)
+            imgs, masks = run_cellpose_segment(filename, self.model, self.directory)
             labelled_imgs = create_labelled_imgs(masks, imgs)
             save_file_path = os.path.normpath(
                 os.path.join(self.heatmap_folder, f'{filename.split(".")[0]}.png'))
@@ -114,8 +115,10 @@ class App(tk.Frame):
         # path = 'bacteria-icon.png'  # place path to your image here
 
     def finalize_canvas(self, sample_image_path):
-
-        self.image = Image.open(sample_image_path)  # open image
+        if sample_image_path == None:
+            self.image = Image.open(os.path.join(self.heatmap_folder, os.listdir(self.heatmap_folder)[0]))
+        else:
+            self.image = Image.open(sample_image_path)  # open image
         self.width, self.height = self.image.size
         self.container = self.canvas.create_rectangle(
             0, 0, self.width, self.height, width=0)
@@ -162,10 +165,11 @@ class App(tk.Frame):
         self.current_coord_selected = None
         self.current_analysis_image_label = None
         self.counter = 0
-
         self.total_zoom = 1
 
     # added stuff
+
+        
 
     def reset_image(self, event):
         self.total_zoom = 1

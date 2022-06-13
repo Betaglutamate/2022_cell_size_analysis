@@ -9,12 +9,12 @@ def create_model():
     model = models.CellposeModel(pretrained_model='cellpose_model/Chr_flat_cell_final')
     return model
 
-def run_cellpose_segment(filename, model):
+def run_cellpose_segment(filename, model, directory):
     '''This function takes the directory and cellpose model and returns
     masks_flow and styles
     '''
 
-    directory = 'Volume_videos/20220120_volume video'
+    #directory = 'Volume_videos/20220120_volume video'
     files = [filename]
 
     imgs = [io.imread(os.path.join(directory, f)) for f in files]
