@@ -34,13 +34,17 @@ class App(tk.Frame):
         self._initialize_image()
         self.finalize_canvas(sample_image_path=self.sample_image_path)
         self.model = create_model()
+
+        # I also start a thread to do cellpose calculations
         t = threading.Thread(target=self.background_task)
+        self.stop_event = threading.Event()
         t.start()
 
     def background_task(self):
         '''This will run in the background and generate the images for scrolling through
         '''
         self._generate_heatmaps()
+        
 
     def _get_image_paths(self):
         '''Here I collect all image names in the selected folder note I filter for tif
@@ -73,6 +77,8 @@ class App(tk.Frame):
             self.rescale_images(os.path.join(file))
             print(
                 f'converting image {i} out of {len(self.all_filter_image_paths)}')
+            if self.stop_event.is_set():
+                break
 
     def rescale_images(self, filename):
 
@@ -262,7 +268,7 @@ class App(tk.Frame):
         self.display_coords_button.grid(row=3, column=2)
 
         self.exit_button = tk.Button(
-            self.parent, text="Exit", width=20, pady=20, command=self.quit)
+            self.parent, text="Exit", width=20, pady=20, command=self._quit_app)
         self.exit_button.grid(row=4, column=0)
 
         self.current_dir_button = tk.Button(
@@ -302,6 +308,10 @@ class App(tk.Frame):
             self.heatmap_folder, png_file_paths[int(slider_value)])
         self.finalize_canvas(loaded_image_name)
         self.show_image()
+    
+    def _quit_app(self):
+        self.stop_event.set()
+        self.quit()
 
     # I need to load all the images
 

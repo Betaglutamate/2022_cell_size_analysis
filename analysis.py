@@ -72,6 +72,7 @@ class Analysis():
 
             for num, image in enumerate(self.img_collection):
                 cropped = image[y1:y2, x1:x2]
+                cropped = img_as_ubyte(cropped)
                 io.imsave(os.path.join(
                     cell_save_path, f"cell_{enumerator}_id{k}_{num}.png"), cropped, check_contrast=False)
 
@@ -94,7 +95,7 @@ class Analysis():
                 area, label_image = self.measure_properties(image)
                 time_list.append(num)
                 area_list.append(area)
-                label_img_8bit = label_image
+                label_img_8bit = label_image.astype(np.uint8) * 255
                 
                 io.imsave(os.path.join(
                     label_path, f"label_image_{num}.png"), label_img_8bit, check_contrast=False)
@@ -126,19 +127,6 @@ class Analysis():
             regions
         '''
 
-        # background_intensity = np.mean(image[0:5, 0:5])
-        # img_free = image-background_intensity
-        # from skimage.morphology import binary_opening
-        # from skimage.feature import canny
-        # from scipy.ndimage import binary_fill_holes
-        
-        # thresh = threshold_otsu(new_im)        
-        # final_im = new_im < thresh
-
-        # dilated_img = binary_opening(final_im)
-        # edges = canny(dilated_img)
-
-
         color_array = np.empty((0, 4)) # 4 because I have four colour dimensions
 
         for x, y, *c in image[:, :, :]:
@@ -151,15 +139,8 @@ class Analysis():
         for col in unique_colours:
             if col != backg:
                 new_unique_colours.append(col)
-        # no_bg = np.delete(unique_colours, np.where(unique_colours == bg)
-        # unique_col_no_bg = np.delete(unique_colours, np.where(unique_colours != bg)) #Here I remove the bg colour to make sure only cells are labelled as obj
-        # print(unique_col_no_bg)
-
 
         list_of_cells = []
-
-        # Make mask of all perfectly red pixels
-
         for colour in new_unique_colours:
             single_cell = np.all(image == colour, axis=-1)
             list_of_cells.append(single_cell)
@@ -177,7 +158,6 @@ class Analysis():
                     all_regions.append(self.area)
                     all_labels.append(self.label_image)
             self.copy_list=list_of_cells
-            print('copy made')
 
         
         else:
@@ -189,13 +169,9 @@ class Analysis():
                     all_regions.append(self.area)
                     all_labels.append(self.label_image)
             
-        
-
 
         max_value = max(all_regions) 
         max_index = all_regions.index(max_value) 
-        
-
         self.max_area = all_regions[max_index]
         self.new_img = all_labels[max_index]
 
