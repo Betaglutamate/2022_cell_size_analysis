@@ -12,9 +12,10 @@ import pandas as pd
 
 
 class Analysis():
-    def __init__(self, path, coord_folder, masks_folder, **kwargs):
+    def __init__(self, path, coord_folder, masks_folder, heatmap_folder, **kwargs):
         self.path = path
         self.masks = masks_folder
+        self.heatmap = heatmap_folder
         self.coord_folder = coord_folder
         self.single_image = kwargs.get('single_cell')
 
@@ -22,11 +23,14 @@ class Analysis():
         self.img_collection = io.imread_collection(
             os.path.normpath(self.masks + '/*.png'))
         print(self.path)
+        self.heatmap_collection = io.imread_collection(
+            os.path.normpath(self.heatmap + '/*.png'))
 
     def create_subcells(self):
         # load images into sk ima
         self.cell_save_paths = []
         self.cell_save_paths_labelled = []
+        self.cell_save_paths_heatmap = []
         subcell_dict = {}
 
         with open(os.path.normpath(os.path.join(self.coord_folder, 'coordinates.csv')), 'r') as file:
@@ -60,21 +64,30 @@ class Analysis():
             enumerator = enumerator + 1
 
             cell_save_path = os.path.join(self.path, f"cell_{enumerator}")
-
             Path(cell_save_path).mkdir(parents=True, exist_ok=True)
 
             cell_path_labelled = os.path.join(cell_save_path, "_labelled")
-
             Path(cell_path_labelled).mkdir(parents=True, exist_ok=True)
+
+            cell_path_heatmap = os.path.join(cell_save_path, "_heatmap")
+            Path(cell_path_heatmap).mkdir(parents=True, exist_ok=True)
 
             self.cell_save_paths.append(cell_save_path)
             self.cell_save_paths_labelled.append(cell_path_labelled)
+            self.cell_save_paths_heatmap.append(cell_path_heatmap)
+
 
             for num, image in enumerate(self.img_collection):
                 cropped = image[y1:y2, x1:x2]
                 cropped = img_as_ubyte(cropped)
                 io.imsave(os.path.join(
                     cell_save_path, f"cell_{enumerator}_id{k}_{num}.png"), cropped, check_contrast=False)
+            
+            for num, image in enumerate(self.heatmap_collection):
+                cropped = image[y1:y2, x1:x2]
+                cropped = img_as_ubyte(cropped)
+                io.imsave(os.path.join(
+                    cell_path_heatmap, f"cell_{enumerator}_id{k}_{num}.png"), cropped, check_contrast=False)
 
             print("finished_processing")
 

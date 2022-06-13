@@ -21,7 +21,7 @@ class Viewer():
 
         for dir in cell_analysis_dirs:
             print(dir)
-            cell_images = io.imread_collection(dir + '/*.png')
+            cell_images = io.imread_collection(dir + '/_heatmap' + '/*.png')
             cell_masks = io.imread_collection(dir + '/_labelled' + '/*.png')
             cell_number = os.path.split(dir)[1]
             data = read_csv(dir + '/analysis' +

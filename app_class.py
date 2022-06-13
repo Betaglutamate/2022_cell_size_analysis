@@ -110,7 +110,7 @@ class App(tk.Frame):
         self.sample_image_path = os.path.normpath(
             os.path.join(self.coord_folder, "display_image.png"))
 
-        imsave(self.sample_image_path, arr=sample_image, cmap="magma")
+        imsave(self.sample_image_path, arr=sample_image)
 
         # path = 'bacteria-icon.png'  # place path to your image here
 
@@ -178,7 +178,7 @@ class App(tk.Frame):
         self.total_zoom = 1
         self.canvas.destroy()
         self._createCanvas()
-        self.finalize_canvas(sample_image_path=self.sample_image_path)
+        self.finalize_canvas(sample_image_path=None)
         self.display_coords()
 
     def show_image(self, event=None):
@@ -439,7 +439,7 @@ class App(tk.Frame):
         self.display_coords()
 
     def start_analysis(self):
-        analysis = Analysis(self.root, self.coord_folder, masks_folder = self.masks_folder)
+        analysis = Analysis(self.root, self.coord_folder, masks_folder = self.masks_folder, heatmap_folder = self.heatmap_folder)
         analysis._load_images()
         analysis.create_subcells()
         analysis.calculate_cell_area()
