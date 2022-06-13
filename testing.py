@@ -3,24 +3,7 @@ import numpy as np
 
 test = ski.io.imread("Volume_short/20220120_volume video/masks/171824-0009.png")
 
-a = test[...,0:3]
 
-b = ski.color.rgb2gray(a)
-
-bit = ski.img_as_ubyte(b)
-
-ski.io.imshow(a)
-ski.io.imshow(b)
-
-ski.filters.threshold_otsu(bit)
-
-x = bit >= 22
-
-ski.io.imshow(x)
-
-
-# thresh = threshold_otsu(new_im)        
-# final_im = new_im < thresh
 
 label_image = ski.measure.label(x)
 test_label = ski.color.label2rgb(label_image, image=b, bg_label=0)
@@ -37,5 +20,31 @@ for pos in region_props:
         new_img[x, y] = 255
 
 ski.io.imshow(new_img)
+
+
+
+test_array = np.empty((0, 4)) # 4 because I have four colour dimensions
+
+for x, y, *c in test[:, :, :]:
+    test_array = np.append(test_array, c, axis = 0)
+
+unique_colours = np.unique(test_array, axis = 0)
+
+
+list_of_cells = []
+
+# Make mask of all perfectly red pixels
+for colour in unique_colours:
+    single_cell = np.all(test == colour, axis=-1)
+    list_of_cells.append(single_cell)
+
+
+for cell in list_of_cells[0:5]:
+    ski.io.imshow(cell)
+
+ski.io.imshow(list_of_cells[0])
+
+
+
 
 
