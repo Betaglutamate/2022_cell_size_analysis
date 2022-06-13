@@ -116,7 +116,10 @@ class App(tk.Frame):
 
     def finalize_canvas(self, sample_image_path):
         if sample_image_path == None:
-            self.image = Image.open(os.path.join(self.heatmap_folder, os.listdir(self.heatmap_folder)[0]))
+            try:
+                self.image = Image.open(os.path.join(self.heatmap_folder, os.listdir(self.heatmap_folder)[0]))
+            except IndexError:
+                self.image = Image.open(self.sample_image_path)
         else:
             self.image = Image.open(sample_image_path)  # open image
         self.width, self.height = self.image.size

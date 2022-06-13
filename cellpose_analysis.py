@@ -6,7 +6,7 @@ from skimage.io import imshow
 
 def create_model():
     '''Here I load the desired cellpose_model stored under cellpose_model_folder'''
-    model = models.CellposeModel(pretrained_model='cellpose_model/Chr_flat_cell_final')
+    model = models.CellposeModel(pretrained_model='cellpose_model/Chr_flat_cell_final', gpu=True)
     return model
 
 def run_cellpose_segment(filename, model, directory):
