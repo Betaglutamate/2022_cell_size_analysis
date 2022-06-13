@@ -138,55 +138,68 @@ class Analysis():
         # dilated_img = binary_opening(final_im)
         # edges = canny(dilated_img)
 
-        a = image[...,0:3]
 
-        b = rgb2gray(a)
+        color_array = np.empty((0, 4)) # 4 because I have four colour dimensions
 
-        bit = img_as_ubyte(b)
-        x = bit >= 22
+        for x, y, *c in image[:, :, :]:
+            color_array = np.append(color_array, c, axis = 0)
 
-        label_image = label(x)
-        test_label = label2rgb(label_image, image=b, bg_label=0)
-        region_props = regionprops(label_image)
+        unique_colours = np.unique(color_array, axis = 0).tolist()
+        backg = [68,1,84,255] # This is the bg color given to cellpose images
+        new_unique_colours = []
+
+        for col in unique_colours:
+            if col != backg:
+                new_unique_colours.append(col)
+        # no_bg = np.delete(unique_colours, np.where(unique_colours == bg)
+        # unique_col_no_bg = np.delete(unique_colours, np.where(unique_colours != bg)) #Here I remove the bg colour to make sure only cells are labelled as obj
+        # print(unique_col_no_bg)
 
 
-        self.new_img = np.zeros(image[:,:,0].shape)
+        list_of_cells = []
 
-        # for pos in region_props:
-        #     for obj in pos.coords:
-        #         x, y = obj[0], obj[1]
-        #         print(x, y)
-        #         new_img[x, y] = 255
+        # Make mask of all perfectly red pixels
 
-        filtered_list = []
-        max_area_list = []
-        for point in region_props:
-            filtered_list.append(point)
-            max_area_list.append(point.area)
+        for colour in new_unique_colours:
+            single_cell = np.all(image == colour, axis=-1)
+            list_of_cells.append(single_cell)
+
+
+        all_regions = []
+        all_labels = []
+
+        if list_of_cells:
+            for single_mask in list_of_cells:
+                    self.label_image = label(single_mask)
+                    region_props = regionprops(self.label_image)
+
+                    self.area = region_props[0].area
+                    all_regions.append(self.area)
+                    all_labels.append(self.label_image)
+            self.copy_list=list_of_cells
+            print('copy made')
+
         
-        # find largest area
-        try:
-            probably_cell = max_area_list.index(max(max_area_list))
+        else:
+            for single_mask in self.copy_list:
+                    self.label_image = label(single_mask)
+                    region_props = regionprops(self.label_image)
 
-            obj_coords = []
-            for obj in filtered_list:
-                for pos in obj.coords:
-                    x, y = pos[0], pos[1]
-                    self.new_img[x, y] = 255
+                    self.area = region_props[0].area
+                    all_regions.append(self.area)
+                    all_labels.append(self.label_image)
             
-            # labelled_img, labels = ndimage.label(new_img)
-            # labelled_img = label2rgb(new_img, bg_label=0)
-            # labelled_img[0:5, 0:5, :] = [0, 0, 1]
-
-            # save new image here
-
-            self.max_area = max_area_list[probably_cell]
+        
 
 
-            return self.max_area, self.new_img
-        except ValueError:
-            print('empty array')
-            return self.max_area, self.new_img
+        max_value = max(all_regions) 
+        max_index = all_regions.index(max_value) 
+        
+
+        self.max_area = all_regions[max_index]
+        self.new_img = all_labels[max_index]
+
+        return self.max_area, self.new_img
 
 
         
