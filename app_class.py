@@ -44,7 +44,12 @@ class App(tk.Frame):
         '''This will run in the background and generate the images for scrolling through
         '''
         self._generate_heatmaps()
-        
+    
+    def restart(self):
+        import sys
+        python = sys.executable
+        os.execl(python, python, * sys.argv)
+
 
     def _get_image_paths(self):
         '''Here I collect all image names in the selected folder note I filter for tif
@@ -253,7 +258,8 @@ class App(tk.Frame):
         self.show_image()
 
     def _open_image_folder(self):
-        self.directory = filedialog.askdirectory()
+        self.directory = filedialog.askdirectory(initialdir="/home/betaglutamate/OneDrive/00_PhD/00_Phd_data")
+
 
     def _createCanvas(self):
         self.canvas = tk.Canvas(self.parent, width=520, height=520, bg='white')
@@ -279,7 +285,7 @@ class App(tk.Frame):
         self.exit_button.grid(row=4, column=0)
 
         self.current_dir_button = tk.Button(
-            self.parent, text="open images", width=20, pady=20, command=self._open_image_folder)
+            self.parent, text="open images", width=20, pady=20, command=self.restart)
         self.current_dir_button.grid(row=4, column=1)
 
         self.open_analysis_window = tk.Button(self.parent, width=20, pady=20, bg="#88ffff",

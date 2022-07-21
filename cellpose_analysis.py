@@ -7,7 +7,7 @@ from skimage.io import imshow
 def create_model():
     '''Here I load the desired cellpose_model stored under cellpose_model_folder, if gpu acceleration is
     desired then switch gpu to true make sure that you have torch gpu installed'''
-    model = models.CellposeModel(pretrained_model='cellpose_model/Chr_flat_cell_final', gpu=True)
+    model = models.CellposeModel(pretrained_model='cellpose_model/CHR_skinny_new', gpu=True)
     return model
 
 def run_cellpose_segment(filename, model, directory):
