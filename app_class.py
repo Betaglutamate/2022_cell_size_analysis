@@ -311,7 +311,7 @@ class App(tk.Frame):
 
         self.image_slider = tk.Scale(self.parent, from_=0, to=len(
             self.all_filter_image_paths)-1, orient=tk.HORIZONTAL, command=self.switch_image)
-        self.image_slider.grid(row=5, column=1)
+        self.image_slider.grid(row=5, column=0, columnspan = 3, sticky='NSEW', padx=5)
 
     def switch_image(self, slider_value):
         png_file_paths = [x.replace("tif", "png")

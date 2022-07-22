@@ -16,5 +16,6 @@ def summarize_data(directory):
                 complete_df.append(temp_df)
 
     final_df = pd.concat(complete_df)
+    final_df = final_df.drop(['Unnamed: 0'], axis=1)
 
     final_df.to_csv(directory + '/01_final_df.csv')
