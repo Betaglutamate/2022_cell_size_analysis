@@ -44,6 +44,8 @@ class App(tk.Frame):
         '''This will run in the background and generate the images for scrolling through
         '''
         self._generate_heatmaps()
+        os.system('notify-send "Heatmaps generated" "Task Complete"')
+
     
     def restart(self):
         import sys
@@ -449,6 +451,8 @@ class App(tk.Frame):
         analysis._load_images()
         analysis.create_subcells()
         analysis.calculate_cell_area()
+        os.system('notify-send "Analysis Complete" "Task Complete"')
+
 
         # run here
 
