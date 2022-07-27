@@ -178,7 +178,6 @@ class App(tk.Frame):
         self.total_zoom = 1
 
     # added stuff
-
         
 
     def reset_image(self, event):
@@ -187,6 +186,7 @@ class App(tk.Frame):
         self._createCanvas()
         self.finalize_canvas(sample_image_path=None)
         self.display_coords()
+        self.image_slider.set(0)
 
     def show_image(self, event=None):
         ''' Show image on the Canvas '''
@@ -300,14 +300,6 @@ class App(tk.Frame):
         self.analysis_button = tk.Button(
             self.parent, bg="#88ffff", text="Start analysis", width=20, pady=20, command=self.start_analysis)
         self.analysis_button.grid(row=0, column=6, columnspan=2)
-
-        self.select_coord_forward = tk.Button(
-            self.parent, bg="#882244", text="select next coord", width=20, pady=20, command=lambda: self.select_coord('forward'))
-        self.select_coord_forward.grid(row=1, column=6)
-
-        self.select_coord_backward = tk.Button(
-            self.parent, bg="#882244", text="select previous coord", width=20, pady=20, command=lambda: self.select_coord('backward'))
-        self.select_coord_backward.grid(row=1, column=7)
 
         # picture slider
 
@@ -458,88 +450,6 @@ class App(tk.Frame):
 
         summarize_data(self.root)
 
-    def select_cell_button_logic(self, direction):
-        all_coords = []
-
-        with open(os.path.join(self.coord_folder, 'coordinates.csv'), 'r') as file:
-            reader = csv.reader(file)
-            for row in reader:
-                all_coords.append(row)
-
-        # select coordinate
-        if direction == "forward":
-
-            if self.current_row_index > len(all_coords)-1:
-                self.current_row_index = 0
-            current_row = all_coords[self.current_row_index]
-            self.current_row_index = self.current_row_index + 1
-
-        if direction == "backward":
-
-            if self.current_row_index < 0:
-                self.current_row_index = len(all_coords)-1
-            elif self.current_row_index > len(all_coords)-1:
-                self.current_row_index = self.current_row_index-1
-
-            current_row = all_coords[self.current_row_index]
-            self.current_row_index = self.current_row_index - 1
-
-        return current_row
-
-    def select_coord(self, direction):
-
-        current_row = self.select_cell_button_logic(direction)
-
-        if self.current_coord_selected is not None:
-            self.canvas.delete(self.current_coord_selected)
-
-        self.reset_image(event=None)
-
-        self.current_coord_selected = self.canvas.create_rectangle(
-            current_row[2], current_row[3], current_row[4], current_row[5], outline="#ff0000",  width=2)
-
-        self.perform_sample_analysis(current_row)
-
-    def perform_sample_analysis(self, current_row):
-        img = self.loaded_image
-        x1, y1, x2, y2 = current_row[2], current_row[3], current_row[4], current_row[5]
-        x1 = int(float(x1))
-        x2 = int(float(x2))
-        y1 = int(float(y1))
-        y2 = int(float(y2))
-
-        if x1 > x2:
-            x1_temp = x1
-            x1 = x2
-            x2 = x1_temp
-
-        if y1 > y2:
-            y1_temp = y1
-            y1 = y2
-            y2 = y1_temp
-
-        cropped = img[y1:y2, x1:x2]
-
-        single_analysis = Analysis(
-            self.root, self.coord_folder, single_cell=cropped)
-        max_area, labelled_img = single_analysis.measure_properties(cropped)
-        current_analysis_image_path = os.path.join(
-            self.coord_folder, "current_analysis.png")
-        rescaled_img = rescale(
-            labelled_img, 4, anti_aliasing=False, channel_axis=2)
-        labelled_img_8bit = img_as_ubyte(rescaled_img)
-
-        io.imsave(current_analysis_image_path, labelled_img_8bit)
-
-        if self.current_analysis_image_label is not None:
-            self.current_analysis_image_label.destroy()
-
-        current_analysis_image = (tk.PhotoImage(
-            file=(current_analysis_image_path)))
-        self.current_analysis_image_label = tk.Label(
-            image=current_analysis_image)
-        self.current_analysis_image_label.image = current_analysis_image  # keep a reference!
-        self.current_analysis_image_label.grid(row=2, column=6, columnspan=2)
 
     def openAnalysisWindow(self):
         # Create new anlysis window
