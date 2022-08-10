@@ -14,22 +14,18 @@ def run_cellpose_segment(filename, model, directory):
     '''This function takes the directory and cellpose model and returns
     masks_flow and styles
     '''
-
-    #directory = 'Volume_videos/20220120_volume video'
     files = [filename]
-
     imgs = [io.imread(os.path.join(directory, f)) for f in files]
     imgs = [exposure.rescale_intensity(img) for img in imgs]
-    nimg = len(imgs)
 
     channels = [[0,0]] #0, 0 means grayscale image
 
+    masks, flows, styles = model.eval(imgs, diameter=None, channels=channels, compute_masks=True)
 
-    masks, flows, styles = model.eval(imgs, diameter=None, channels=channels)
-    
+    #from scipy.ndimage import find_objects
+    #find_objects(masks[0])
 
-    outlines = utils.outlines_list(masks[0])
-
+    #outlines = utils.outlines_list(masks[0])
     
     return imgs, masks
 
