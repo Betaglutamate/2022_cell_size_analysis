@@ -103,15 +103,17 @@ class Analysis():
             area_list = []
             length_list = []
             width_list = []
+            orientation_list = []
 
             # Try calculating threshold based on first image only
 
             for num, image in enumerate(cell_collection):
-                area, label_image, length, width = self.measure_properties(image)
+                area, label_image, length, width, orientation = self.measure_properties(image)
                 time_list.append(num)
                 area_list.append(area)
                 length_list.append(length)
                 width_list.append(width)
+                orientation_list.append(orientation)
                 label_img_8bit = label_image.astype(np.uint8) * 255
                 
                 io.imsave(os.path.join(
@@ -133,7 +135,7 @@ class Analysis():
                 path, "analysis", f"{cell_number}_cellplot.png")))
 
             plt.close()
-            analysis_df = pd.DataFrame({"Time": time_list, "Area": area_list, "Length": length_list, "Width": width_list})
+            analysis_df = pd.DataFrame({"Time": time_list, "Area": area_list, "Length": length_list, "Width": width_list, "Orientation": orientation_list})
             analysis_df.to_csv(os.path.normpath(os.path.join(
                 path, "analysis", f"{cell_number}_dataframe.csv")))
 
@@ -166,6 +168,7 @@ class Analysis():
         all_areas = []
         all_axis_length = []
         all_axis_width = []
+        all_orientation = []
         all_labels = []
 
         if list_of_cells:
@@ -175,10 +178,13 @@ class Analysis():
                     self.area = region_props[0].area
                     self.cell_length = region_props[0].axis_major_length
                     self.cell_width = region_props[0].axis_minor_length
+                    self.cell_orientation = region_props[0].orientation
+                    self.cell_orientation = self.cell_orientation * (180/np.pi) + 90 
                     
                     all_areas.append(self.area)
                     all_axis_length.append(self.cell_length)
                     all_axis_width.append(self.cell_width)
+                    all_orientation.append(self.cell_orientation)
                     all_labels.append(self.label_image)
             self.copy_list=list_of_cells
 
@@ -202,9 +208,10 @@ class Analysis():
         self.max_area = all_areas[max_index]
         self.max_length = all_axis_length[max_index]
         self.max_width = all_axis_width[max_index]
+        self.max_orientation = all_orientation[max_index]
         self.new_img = all_labels[max_index]
 
-        return self.max_area, self.new_img, self.max_length, self.max_width
+        return self.max_area, self.new_img, self.max_length, self.max_width, self.max_orientation
 
 
         
