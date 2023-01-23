@@ -208,7 +208,11 @@ class Analysis():
         self.max_area = all_areas[max_index]
         self.max_length = all_axis_length[max_index]
         self.max_width = all_axis_width[max_index]
-        self.max_orientation = all_orientation[max_index]
+        try:
+            self.max_orientation = all_orientation[max_index]
+        except IndexError:
+            print("index error")
+            self.max_orientation = float('nan')
         self.new_img = all_labels[max_index]
 
         return self.max_area, self.new_img, self.max_length, self.max_width, self.max_orientation
